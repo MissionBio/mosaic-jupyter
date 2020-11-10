@@ -230,6 +230,8 @@ def customize(assay):
 
             if new_name != lab:
                 lab_map[lab] = new_name
+                pal[new_name] = pal[lab]
+                del pal[lab]
 
     return lab_map, pal
 

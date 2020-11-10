@@ -405,13 +405,15 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
             original_palette = assay.get_palette()
 
             if kwargs[labelby] == DFT.PROTEIN_LABEL:
+                protein_pal = dna.get_palette()
                 assay.set_labels(protein.get_labels())
-                assay.set_palette(protein.get_palette())
+                assay.set_palette(protein_pal)
                 kwargs[labelby] = 'label'
 
             if kwargs[labelby] == DFT.DNA_LABEL:
+                dna_pal = dna.get_palette()
                 assay.set_labels(dna.get_labels())
-                assay.set_palette(dna.get_palette())
+                assay.set_palette(dna_pal)
                 kwargs[labelby] = 'label'
 
             fig = plot_funcs[kind](**kwargs)
