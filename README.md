@@ -7,3 +7,22 @@ the capabilities of the Mission Bio analysis package, [Mosaic](https://github.co
 
 ### List of vignettes
 - [Basic usage of Mosaic](https://missionbio.github.io/mosaic-vignettes/basics/basics.html)
+
+### Interactive app
+A user interface for Mosaic has been built using [streamlit](https://www.streamlit.io/)
+
+After installing [Mosaic](https://github.com/MissionBio/mosaic) install streamlit
+in the appropriate environment using:
+
+```
+pip install streamlit
+```
+
+the app can be launched using:
+
+```
+streamlit run ./streamlit/mosaic.py
+```
+
+For s3 access credentials have to be added to `/.aws/credentials`
+
