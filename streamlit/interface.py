@@ -1,9 +1,11 @@
 import os
+import shutil
 import streamlit as st
 import defaults as DFT
 
 STATUS = None
 ERROR = None
+DOWNLOAD = None
 SUBHEADER = None
 
 
@@ -32,16 +34,18 @@ def status(msg):
 
 def download(download_path):
     name = download_path.split('/')[-1]
-    os.popen(f'rm {DFT.DOWNLOADS_PATH}/*')
-    os.popen(f'cp {download_path} {DFT.DOWNLOADS_PATH / name}')
-    ERROR.markdown(f'<b>[Click here to download {name}](downloads/{name})</b>', unsafe_allow_html=True)
+    shutil.rmtree(DFT.DOWNLOADS_PATH)
+    os.makedirs(DFT.DOWNLOADS_PATH)
+    shutil.copy(download_path, DFT.DOWNLOADS_PATH / name)
+    DOWNLOAD.markdown(f'<b>[Click here to download {name}](downloads/{name})</b>', unsafe_allow_html=True)
 
 
 def init():
-    global STATUS, ERROR, SUBHEADER
+    global STATUS, ERROR, SUBHEADER, DOWNLOAD
 
     st.title('Mosaic')
     ERROR = st.empty()
+    DOWNLOAD = st.empty()
     SUBHEADER = st.empty()
     STATUS = st.empty()
 
@@ -51,4 +55,3 @@ def init():
                             '</style>')
 
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-

@@ -1,3 +1,4 @@
+import os
 import boto3
 import streamlit as st
 import pandas as pd
@@ -90,11 +91,12 @@ def save(sample, dna, protein, should_save, name):
     elif name[-3:] == '.h5':
         name = name[:-3]
 
+    samp = mosample(protein=protein, dna=dna, cnv=sample.cnv)
     try:
-        samp = mosample(protein=protein, dna=dna, cnv=sample.cnv)
-        mio.save(samp, f'./h5/analyzed/{name}.h5')
-    except OSError:
-        interface.error('File already exists. Try another name.')
+        os.remove(f'./h5/analyzed/{name}.h5')
+    except FileNotFoundError:
+        pass
+    mio.save(samp, f'./h5/analyzed/{name}.h5')
 
     interface.status('Done.')
     interface.rerun()
@@ -248,6 +250,9 @@ def preliminary_cluster(dna, protein):
                 'method': method,
                 DFT.CLUSTER_OPTIONS[method][-1]: cluster_arg
             }
+            if prep_assay.name == dna.name:
+                cluster_kwargs['similarity'] = 0.8
+                description = description + f" with {cluster_kwargs['similarity']} similarity"
             cluster(prep_assay, dna, protein, prep_assay.cluster, description, random_state=np.random.random(), **cluster_kwargs)
 
 
@@ -414,11 +419,15 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
             assay.set_palette(new_pal)
 
             if 'cluster' in kwargs:
-                if kwargs['cluster']:
-                    kwargs['bars_order'] = assay.clustered_barcodes(orderby=kwargs['attribute'], splitby='label')
-                else:
-                    kwargs['bars_order'] = assay.clustered_barcodes(splitby='label')
+                bars_ordered = assay.clustered_barcodes(orderby=kwargs['attribute'])
+                if not kwargs['cluster']:
+                    labels = assay.get_labels()[[np.where(assay.barcodes() == b)[0][0] for b in bars_ordered]]
+                    bars_ordered = []
+                    for lab in pd.unique(labels):
+                        bars_ordered.extend(assay.barcodes(lab))
+                    bars_ordered = np.array(bars_ordered)
 
+                kwargs['bars_order'] = bars_ordered
                 del kwargs['cluster']
 
             fig = plot_funcs[kind](**kwargs)

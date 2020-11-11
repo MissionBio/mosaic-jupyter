@@ -95,7 +95,7 @@ def files():
                 typed_name = _get_file_from_name(typed_name)
                 if file is not None and typed_name == file:
                     interface.error('Cannot delete the file used in the current analysis.')
-                os.removee(typed_name)
+                os.remove(typed_name)
                 interface.rerun()
         with col2:
             st.markdown('')
@@ -257,7 +257,7 @@ def visual(assay, dna, protein, sample):
                                  DFT.VIOLINPLOT,
                                  DFT.RIDGEPLOT,
                                  DFT.DNA_PROTEIN_PLOT,
-                                 DFT.DNA_PROTEIN_HEATMAP])
+                                 DFT.DNA_PROTEIN_HEATMAP], index=1)
     elif state.analysis_type == DFT.ADVANCED:
         columns = st.beta_columns(DFT.LAYOUT[state.prev_plot])
         types_container = columns[0]

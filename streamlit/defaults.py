@@ -50,12 +50,12 @@ FILTERS = '__mosaic_filters'
 
 
 CLUSTER_METHOD = {
-    DNA_ASSAY: [UMAP_LABEL, 'dbscan', 0.7],
+    DNA_ASSAY: [UMAP_LABEL, 'dbscan', 0.2],
     PROTEIN_ASSAY: [PCA_LABEL, 'graph-community', 30]
 }
 
 CLUSTER_OPTIONS = {
-    'dbscan': ('Proximity', 0.2, 2.0, 0.7, 'eps'),
+    'dbscan': ('Proximity', 0.05, 2.0, 0.2, 'eps'),
     'hdbscan': ('Cluster size', 10, 500, 100, 'min_cluster_size'),
     'kmeans': ('Neighbours', 2, 30, 5, 'n_clusters'),
     'graph-community': ('Neighbours', 10, 500, 100, 'k')
