@@ -214,7 +214,10 @@ def prepare(assay, scale_attribute, pca_attribute, umap_attribute, pca_comps):
 def preliminary_prepare(dna, protein):
     for prep_assay in [dna, protein]:
         if DFT.UMAP_LABEL not in prep_assay.row_attrs:
-            prepare(prep_assay, DFT.LAYERS[prep_assay.name][0], SCALED_LABEL, PCA_LABEL, min(len(prep_assay.ids()), 6))
+            if prep_assay.name == dna.name:
+                prepare(prep_assay, AF_MISSING, SCALED_LABEL, AF_MISSING, min(len(prep_assay.ids()), 8))
+            elif prep_assay.name == protein.name:
+                prepare(prep_assay, DFT.LAYERS[prep_assay.name][0], SCALED_LABEL, PCA_LABEL, min(len(prep_assay.ids()), 8))
 
 
 @st.cache(max_entries=1, hash_funcs=MOHASH, show_spinner=False)
@@ -232,12 +235,6 @@ def cluster(assay, dna, protein, method_func, description, random_state=42, **kw
 
         assay.add_metadata(DFT.CLUSTER_DESCRIPTION, description)
 
-    protein.add_row_attr(DFT.DNA_LABEL, dna.get_labels())
-    protein.add_row_attr(DFT.PROTEIN_LABEL, protein.get_labels())
-
-    dna.add_row_attr(DFT.DNA_LABEL, dna.get_labels())
-    dna.add_row_attr(DFT.PROTEIN_LABEL, protein.get_labels())
-
     state.clustered = True
 
 
@@ -252,9 +249,6 @@ def preliminary_cluster(dna, protein):
                 DFT.CLUSTER_OPTIONS[method][-1]: cluster_arg
             }
             cluster(prep_assay, dna, protein, prep_assay.cluster, description, random_state=np.random.random(), **cluster_kwargs)
-
-    protein.add_row_attr(DFT.DNA_LABEL, dna.get_labels())
-    dna.add_row_attr(DFT.PROTEIN_LABEL, protein.get_labels())
 
 
 def metrics(sample):
@@ -401,26 +395,38 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
             elif 'colorby' in kwargs:
                 labelby = 'colorby'
 
-            original_labels = assay.get_labels()
-            original_palette = assay.get_palette()
+            org_lab = assay.get_labels().copy()
+            org_pal = assay.get_palette()
+            new_lab = org_lab
+            new_pal = org_pal
 
             if kwargs[labelby] == DFT.PROTEIN_LABEL:
-                protein_pal = dna.get_palette()
-                assay.set_labels(protein.get_labels())
-                assay.set_palette(protein_pal)
+                new_pal = protein.get_palette()
+                new_lab = protein.get_labels().copy()
                 kwargs[labelby] = 'label'
 
             if kwargs[labelby] == DFT.DNA_LABEL:
-                dna_pal = dna.get_palette()
-                assay.set_labels(dna.get_labels())
-                assay.set_palette(dna_pal)
+                new_pal = dna.get_palette()
+                new_lab = dna.get_labels().copy()
                 kwargs[labelby] = 'label'
+
+            assay.set_labels(new_lab)
+            assay.set_palette(new_pal)
+
+            if 'cluster' in kwargs:
+                if kwargs['cluster']:
+                    kwargs['bars_order'] = assay.clustered_barcodes(orderby=kwargs['attribute'], splitby='label')
+                else:
+                    kwargs['bars_order'] = assay.clustered_barcodes(splitby='label')
+
+                del kwargs['cluster']
 
             fig = plot_funcs[kind](**kwargs)
             st.plotly_chart(fig)
 
-            assay.set_labels(original_labels)
-            assay.set_palette(original_palette)
+            assay.set_labels(org_lab)
+            assay.set_palette(org_pal)
+
     elif kind == DFT.DNA_PROTEIN_PLOT:
         with plot_columns:
             samp = mosample(protein=protein[:, kwargs['protein_features']], dna=dna[:, kwargs['dna_features']])

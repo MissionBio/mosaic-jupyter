@@ -284,11 +284,7 @@ def visual(assay, dna, protein, sample):
         elif kind == DFT.HEATMAP:
             kwargs['attribute'] = st.selectbox('Attribute', DFT.LAYERS[assay.name], key='Visualization Attribute')
             kwargs['splitby'] = st.selectbox('Split by', DFT.SPLITBY[assay.name])
-            cluster = st.checkbox('Hierarchical cluster', True)
-            if cluster:
-                kwargs['bars_order'] = assay.clustered_barcodes(orderby=kwargs['attribute'], splitby=kwargs['splitby'])
-            else:
-                kwargs['bars_order'] = assay.clustered_barcodes(splitby=kwargs['splitby'])
+            kwargs['cluster'] = st.checkbox('Hierarchical cluster', True)
             kwargs['convolve'] = st.slider('Smoothing', 0, 100)
         elif kind == DFT.SCATTERPLOT:
             kwargs['attribute'] = st.selectbox('Attribute', DFT.ATTRS_2D)
@@ -327,7 +323,7 @@ def visual(assay, dna, protein, sample):
 
         elif kind == DFT.METRICS:
             st.header('')
-            interface.info('<b> Some values might be missing in case the raw<br> files are not loaded.</b> These metrics can be<br> pasted into the metrics sheet as is.')
+            interface.info('<b>Some values might be missing in case the raw<br> files are not loaded.</b> These metrics can be<br> pasted into the metrics sheet as is.')
         elif kind == DFT.READ_DEPTH:
             if assay.name == protein.name:
                 kwargs['layer'] = st.selectbox('Layer', DFT.LAYERS[assay.name])
