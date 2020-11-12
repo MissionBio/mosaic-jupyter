@@ -3,7 +3,8 @@
 ### About
 
 This repository maintains a set of vignettes showcasing
-the capabilities of the Mission Bio analysis package, [Mosaic](https://github.com/MissionBio/mosaic)
+the capabilities of the Mission Bio analysis package, [Mosaic.](https://github.com/MissionBio/mosaic)
+It also includes the code to an interactive app built using [Streamlit.](https://www.streamlit.io/)
 
 ### List of vignettes
 - [Basic usage of Mosaic](https://missionbio.github.io/mosaic-vignettes/basics/basics.html)
