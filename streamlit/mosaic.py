@@ -45,7 +45,7 @@ interface.info(f'Current transformations are:<br>'
 clicked, method, description, cluster_kwargs, info = render.cluster(assay, dna)
 compute.preliminary_cluster(dna, protein)
 if clicked:
-    compute.cluster(assay, dna, protein, method, description, **cluster_kwargs)
+    compute.cluster(assay, method, description, **cluster_kwargs)
     interface.rerun()
 interface.info(f'Currently clustered using {assay.metadata[DFT.CLUSTER_DESCRIPTION]}', info)
 

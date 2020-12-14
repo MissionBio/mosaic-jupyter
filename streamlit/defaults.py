@@ -98,13 +98,20 @@ COLORBY = {
 # ----------- Advanced visuals
 ADVANCED = 'Advanced'
 QC = 'QC'
+DOWNLOAD = 'Download'
 METRICS = 'Metrics'
 READ_DEPTH = 'Read Depth'
+ASSAY_SCATTER = 'Assay Scatter'
 COLORS = 'Colors'
 
 LAYOUT = {
     COLORS: [1.5, 0.5] + [1] * 10,
     METRICS: [0.5, 1, 2],
     READ_DEPTH: [0.5, 0.75, 2],
-    QC: [0.5, 0.75, 2]
+    ASSAY_SCATTER: [0.5, 0.75, 2],
+    QC: [0.5, 0.75, 2],
+    DOWNLOAD: [0.5, 0.75, 2]
 }
+
+ANNOTATION = 'Annotation'
+DOWNLOAD_ITEMS = [ANNOTATION]

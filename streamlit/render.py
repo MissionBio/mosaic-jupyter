@@ -267,7 +267,8 @@ def visual(assay, dna, protein, sample):
             plot_types = [DFT.COLORS,
                           DFT.METRICS,
                           DFT.READ_DEPTH,
-                          DFT.QC]
+                          DFT.ASSAY_SCATTER,
+                          DFT.DOWNLOAD]
             kind = st.radio('', plot_types, index=plot_types.index(state.prev_plot))
 
             if state.prev_plot != kind:
@@ -332,5 +333,12 @@ def visual(assay, dna, protein, sample):
             else:
                 st.header('')
                 interface.info('<b>Only applicable for the protein assay</b>')
+        elif kind == DFT.ASSAY_SCATTER:
+            kwargs['draw'] = sample.protein_raw is not None
+            if not kwargs['draw']:
+                interface.info('<b>Raw files needed for this plot.</b>')
+        elif kind == DFT.DOWNLOAD:
+            kwargs['item'] = st.selectbox('Object to Download', DFT.DOWNLOAD_ITEMS)
+            kwargs['download'] = st.button('Download', key='download_button')
 
     return plot_columns, kind, kwargs

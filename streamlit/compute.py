@@ -34,6 +34,7 @@ MOHASH_BOOL = {**MOHASH, int: lambda _: None, list: lambda _: None, type(''): la
 state = session.get(prev_file=None,
                     dna=None,
                     protein=None,
+                    assays=None,
                     init_dna=True,
                     init_protein=True,
                     dna_preprocess=None,
@@ -68,18 +69,19 @@ def load(path, load_raw, apply_filter):
     interface.status('Reading h5 file.')
 
     sample = mio.load(path, apply_filter=apply_filter, raw=load_raw)
-
-    try:
-        new_ids = np.array([ab.split(' ')[2] for ab in sample.protein.col_attrs['id']])
-    except IndexError:
-        new_ids = sample.protein.ids()
-
-    sample.protein.add_col_attr('id', new_ids)
-    if sample.protein_raw is not None:
-        sample.protein_raw.add_col_attr('id', new_ids)
-
     state.init_dna = True
-    state.init_protein = True
+
+    if sample.protein is not None:
+        try:
+            new_ids = np.array([ab.split(' ')[2] for ab in sample.protein.col_attrs['id']])
+        except IndexError:
+            new_ids = sample.protein.ids()
+
+        sample.protein.add_col_attr('id', new_ids)
+        if sample.protein_raw is not None:
+            sample.protein_raw.add_col_attr('id', new_ids)
+
+        state.init_protein = True
 
     return sample
 
@@ -91,7 +93,11 @@ def save(sample, dna, protein, should_save, name):
     elif name[-3:] == '.h5':
         name = name[:-3]
 
-    samp = mosample(protein=protein, dna=dna, cnv=sample.cnv)
+    prot = sample.protein
+    if prot is not None:
+        prot = protein
+
+    samp = mosample(protein=prot, dna=dna, cnv=sample.cnv)
     try:
         os.remove(f'./h5/analyzed/{name}.h5')
     except FileNotFoundError:
@@ -223,7 +229,7 @@ def preliminary_prepare(dna, protein):
 
 
 @st.cache(max_entries=1, hash_funcs=MOHASH, show_spinner=False)
-def cluster(assay, dna, protein, method_func, description, random_state=42, **kwargs):
+def cluster(assay, method_func, description, random_state=42, **kwargs):
     similarity = None
     if 'similarity' in kwargs:
         similarity = kwargs['similarity']
@@ -253,7 +259,7 @@ def preliminary_cluster(dna, protein):
             if prep_assay.name == dna.name:
                 cluster_kwargs['similarity'] = 0.8
                 description = description + f" with {cluster_kwargs['similarity']} similarity"
-            cluster(prep_assay, dna, protein, prep_assay.cluster, description, random_state=np.random.random(), **cluster_kwargs)
+            cluster(prep_assay, prep_assay.cluster, description, random_state=np.random.random(), **cluster_kwargs)
 
 
 def metrics(sample):
@@ -474,6 +480,13 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
                     fig.layout.width = 400
                     fig.layout.height = 400
                     st.plotly_chart(fig)
+    elif kind == DFT.ASSAY_SCATTER:
+        if kwargs['draw']:
+            with plot_columns[0]:
+                # sample.cnv_raw.normalize_barcodes()
+                # sample.protein_raw.normalize_barcodes()
+                sample.assay_scatter()
+                st.pyplot(plt.gcf())
     elif kind == DFT.COLORS:
         colors = COLORS.copy()
         del colors[20]
@@ -483,6 +496,16 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
 
         for i in range(len(colors)):
             plot_columns[i % len(plot_columns)].color_picker(colors[i], colors[i], key=f'constant-colors-{colors[i]}-{i}')
+    elif kind == DFT.DOWNLOAD:
+        with plot_columns[0]:
+            if kwargs['download']:
+                if kwargs['item'] == DFT.ANNOTATION:
+                    data = np.array([dna.barcodes(), dna.get_labels(), protein.get_labels()]).T
+                    df = pd.DataFrame(data, columns=['barcode', 'dna', 'protein'])
+                    name = f'./{sample.name}.annotation.csv'
+                    df.to_csv(name, index=None)
+                    interface.download(name)
+                    os.remove(name)
 
 
 @st.cache(max_entries=1, hash_funcs=MOHASH, show_spinner=False)
