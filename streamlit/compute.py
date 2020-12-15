@@ -399,14 +399,15 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
                 df = pval.applymap("{0:.2E}".format)
             st.write(kwargs['attribute'])
             st.dataframe(df)
-    elif kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT]:
+    elif kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT, DFT.STRIPPLOT]:
         with plot_columns:
             plot_funcs = {
                 DFT.HEATMAP: assay.heatmap,
                 DFT.SCATTERPLOT: assay.scatterplot,
                 DFT.FEATURE_SCATTER: assay.feature_scatter,
                 DFT.VIOLINPLOT: assay.violinplot,
-                DFT.RIDGEPLOT: assay.ridgeplot
+                DFT.RIDGEPLOT: assay.ridgeplot,
+                DFT.STRIPPLOT: assay.stripplot
             }
 
             labelby = None

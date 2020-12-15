@@ -80,6 +80,7 @@ SCATTERPLOT = 'Scatterplot'
 FEATURE_SCATTER = 'Feature Scatter'
 VIOLINPLOT = 'Violinplot'
 RIDGEPLOT = 'Ridgeplot'
+STRIPPLOT = 'Stripplot'
 DNA_PROTEIN_PLOT = 'DNA vs Protein'
 DNA_PROTEIN_HEATMAP = 'Sample Heatmap'
 
@@ -93,7 +94,7 @@ LAYERS = {
     PROTEIN_ASSAY: [CLR, ASINH, NSP, SCALED_LABEL]
 }
 COLORBY = {
-    DNA_ASSAY: [DNA_LABEL, PROTEIN_LABEL, 'sample_name', AF, AF_MISSING, NGT, NGT_FILTERED, 'density', None],
+    DNA_ASSAY: [DNA_LABEL, PROTEIN_LABEL, 'sample_name', AF, AF_MISSING, NGT, NGT_FILTERED, GQ, DP, 'density', None],
     PROTEIN_ASSAY: [PROTEIN_LABEL, DNA_LABEL, 'sample_name', CLR, ASINH, NSP, SCALED_LABEL, 'density', None]
 }
 

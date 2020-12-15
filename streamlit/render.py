@@ -260,6 +260,7 @@ def visual(assay, dna, protein, sample):
                                  DFT.FEATURE_SCATTER,
                                  DFT.VIOLINPLOT,
                                  DFT.RIDGEPLOT,
+                                 DFT.STRIPPLOT,
                                  DFT.DNA_PROTEIN_PLOT,
                                  DFT.DNA_PROTEIN_HEATMAP], index=1)
     elif state.analysis_type == DFT.ADVANCED:
@@ -313,6 +314,12 @@ def visual(assay, dna, protein, sample):
         elif kind == DFT.RIDGEPLOT:
             kwargs['attribute'] = st.selectbox('Attribute', DFT.LAYERS[assay.name])
             kwargs['splitby'] = st.selectbox('Split by', DFT.SPLITBY[assay.name])
+            features = st.multiselect('Features', list(assay.ids()), list(assay.ids())[:min(len(assay.ids()), 4)])
+            if len(features) != 0:
+                kwargs['features'] = features
+        elif kind == DFT.STRIPPLOT:
+            kwargs['attribute'] = st.selectbox('Attribute', DFT.LAYERS[assay.name])
+            kwargs['colorby'] = st.selectbox('Colorby', DFT.LAYERS[assay.name])
             features = st.multiselect('Features', list(assay.ids()), list(assay.ids())[:min(len(assay.ids()), 4)])
             if len(features) != 0:
                 kwargs['features'] = features
