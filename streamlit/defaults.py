@@ -6,6 +6,8 @@ from missionbio.h5.constants import (
     PROTEIN_ASSAY,
     NGT,
     AF,
+    GQ,
+    DP
 )
 
 from missionbio.mosaic.constants import (
@@ -87,7 +89,7 @@ SPLITBY = {
 }
 ATTRS_2D = [UMAP_LABEL]
 LAYERS = {
-    DNA_ASSAY: [AF_MISSING, AF, NGT, NGT_FILTERED],
+    DNA_ASSAY: [AF_MISSING, AF, NGT, NGT_FILTERED, GQ, DP],
     PROTEIN_ASSAY: [CLR, ASINH, NSP, SCALED_LABEL]
 }
 COLORBY = {
