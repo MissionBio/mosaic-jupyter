@@ -113,9 +113,9 @@ def init_states(sample):
         state.dna = sample.dna[:, :]
 
         if DFT.FILTERS in sample.dna.metadata:
-            state.dna_preprocess = [[], *sample.dna.metadata[DFT.FILTERS]]
+            state.dna_preprocess = [[], [], *sample.dna.metadata[DFT.FILTERS]]
         else:
-            state.dna_preprocess = [[], DFT.MIN_DP, DFT.MIN_GQ, DFT.MIN_VAF, DFT.MIN_STD]
+            state.dna_preprocess = [[], [], DFT.MIN_DP, DFT.MIN_GQ, DFT.MIN_VAF, DFT.MIN_STD]
 
         if DFT.UMAP_LABEL in sample.dna.row_attrs:
             state.init_dna = False
@@ -128,12 +128,21 @@ def init_states(sample):
 
 
 @st.cache(max_entries=1, hash_funcs=MOHASH_BOOL, show_spinner=False, allow_output_mutation=True)
-def preprocess_dna(sample, clicked, drop_vars, dp, gq, af, std):
-    if state.init_dna or (state.dna_preprocess != [drop_vars, dp, gq, af, std] and clicked):
+def preprocess_dna(sample, clicked, drop_vars, keep_vars, dp, gq, af, std):
+    if state.init_dna or (state.dna_preprocess != [drop_vars, keep_vars, dp, gq, af, std] and clicked):
         interface.status('Processing DNA assay.')
 
-        dna = sample.dna.drop(drop_vars) if len(drop_vars) > 0 else sample.dna[:, :]
-        dna_vars = dna.filter_variants(min_dp=dp, min_gq=gq, min_vaf=af, min_std=std)
+        if len(drop_vars) > 0:
+            dna = sample.dna.drop(drop_vars)
+        elif len(keep_vars) > 0:
+            dna = sample.dna[:, keep_vars]
+        else:
+            dna = sample.dna[:, :]
+
+        if len(keep_vars) == 0:
+            dna_vars = dna.filter_variants(min_dp=dp, min_gq=gq, min_vaf=af, min_std=std)
+        else:
+            dna_vars = keep_vars
 
         if len(dna_vars) == 0:
             interface.status('Done.')
@@ -148,7 +157,7 @@ def preprocess_dna(sample, clicked, drop_vars, dp, gq, af, std):
             for key, val in state.dna.metadata.items():
                 dna.add_metadata(key, val)
 
-        state.dna_preprocess = [drop_vars, dp, gq, af, std]
+        state.dna_preprocess = [drop_vars, keep_vars, dp, gq, af, std]
         state.dna = dna
 
         if clicked:

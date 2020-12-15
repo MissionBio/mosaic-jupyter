@@ -107,7 +107,7 @@ def files():
 
 
 def preprocess(sample):
-    drop_vars, dp, gq, af, std = state.dna_preprocess
+    drop_vars, keep_vars, dp, gq, af, std = state.dna_preprocess
     drop_abs = state.protein_preprocess[0]
 
     with st.sidebar.beta_expander('Prepocessing'):
@@ -122,6 +122,10 @@ def preprocess(sample):
             ids = sample.dna.ids()
             ids = list(ids[ids.argsort()])
             drop_vars = st.multiselect('Variants to discard', ids, default=drop_vars)
+            keep_vars = st.multiselect('Variants to keep', ids, default=keep_vars)
+
+            if len(keep_vars) != 0 and len(drop_vars) != 0:
+                interface.error('Cannot keep and drop variants both. Choose only one of the options')
 
         elif assay_type == 'Protein':
             ids = sample.protein.ids()
@@ -132,7 +136,7 @@ def preprocess(sample):
 
         clicked = st.button('Process')
 
-    return assay_type, clicked, [drop_vars, dp, gq, af, std], [drop_abs]
+    return assay_type, clicked, [drop_vars, keep_vars, dp, gq, af, std], [drop_abs]
 
 
 def prepare(assay):
