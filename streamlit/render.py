@@ -308,6 +308,7 @@ def visual(assay, dna, protein, sample):
         elif kind == DFT.VIOLINPLOT:
             kwargs['attribute'] = st.selectbox('Attribute', DFT.LAYERS[assay.name])
             kwargs['splitby'] = st.selectbox('Split by', DFT.SPLITBY[assay.name])
+            kwargs['points'] = st.checkbox('Box and points', False)
             features = st.multiselect('Features', list(assay.ids()), list(assay.ids())[:min(len(assay.ids()), 4)])
             if len(features) != 0:
                 kwargs['features'] = features

@@ -446,7 +446,15 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
                 kwargs['bars_order'] = bars_ordered
                 del kwargs['cluster']
 
+            if kind == DFT.VIOLINPLOT:
+                update = kwargs['points']
+                del kwargs['points']
+
             fig = plot_funcs[kind](**kwargs)
+
+            if kind == DFT.VIOLINPLOT and update:
+                fig.update_traces(points='all', pointpos=-0.5, box_width=0.6, side='positive', marker_size=3)
+
             st.plotly_chart(fig)
 
             assay.set_labels(org_lab)
