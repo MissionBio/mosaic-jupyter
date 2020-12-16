@@ -22,7 +22,7 @@ pip install streamlit
 the app can be launched using:
 
 ```
-streamlit run ./streamlit/mosaic.py
+streamlit run ./mosaic.py
 ```
 
 For s3 access, credentials have to be added to `/.aws/credentials`
