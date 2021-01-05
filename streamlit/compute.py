@@ -1,6 +1,7 @@
 import os
 import boto3
 import streamlit as st
+from streamlit import caching
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,6 +20,8 @@ from missionbio.mosaic.constants import (
     COLORS
 )
 
+from missionbio.h5.constants import DNA_ASSAY, PROTEIN_ASSAY
+
 import defaults as DFT
 import interface
 import session
@@ -31,18 +34,34 @@ MOHASH = {moprotein: lambda a: a.name + a.title + str(a.shape),
 
 MOHASH_BOOL = {**MOHASH, int: lambda _: None, list: lambda _: None, type(''): lambda _: None}
 
+# Add to new state reset_state() as well
 state = session.get(prev_file=None,
                     dna=None,
                     protein=None,
-                    assays=None,
-                    init_dna=True,
-                    init_protein=True,
+                    init_dna=False,
+                    init_protein=False,
                     dna_preprocess=None,
                     protein_preprocess=None,
                     prepped=True,
                     clustered=True,
                     analysis_type=DFT.PRIMARY,
                     prev_plot=DFT.COLORS)
+
+
+def reset_state():
+    state.dna = None
+    state.protein = None
+    state.init_dna = False
+    state.init_protein = False
+    state.dna_preprocess = None
+    state.protein_preprocess = None
+    state.prepped = True
+    state.clustered = True
+    state.analysis_type = DFT.PRIMARY
+    state.prev_plot = DFT.COLORS
+
+    caching.clear_cache()
+    interface.rerun()
 
 
 @st.cache(max_entries=1, show_spinner=False)
@@ -68,6 +87,9 @@ def download(link):
 def load(path, load_raw, apply_filter):
     interface.status('Reading h5 file.')
 
+    if state.dna is not None:
+        reset_state()
+
     sample = mio.load(path, apply_filter=apply_filter, raw=load_raw)
     state.init_dna = True
 
@@ -86,18 +108,14 @@ def load(path, load_raw, apply_filter):
     return sample
 
 
-def save(sample, dna, protein, should_save, name):
+def save(sample, name):
     interface.status('Saving h5 file.')
     if name == '':
         interface.error('Please provide a name to save by.')
     elif name[-3:] == '.h5':
         name = name[:-3]
 
-    prot = sample.protein
-    if prot is not None:
-        prot = protein
-
-    samp = mosample(protein=prot, dna=dna, cnv=sample.cnv)
+    samp = mosample(protein=state.protein, dna=state.dna, cnv=sample.cnv)
     try:
         os.remove(f'./h5/analyzed/{name}.h5')
     except FileNotFoundError:
@@ -108,28 +126,38 @@ def save(sample, dna, protein, should_save, name):
     interface.rerun()
 
 
-def init_states(sample):
+def init_assays(sample):
+    available_assays = []
+
     if state.init_dna:
         state.dna = sample.dna[:, :]
 
         if DFT.FILTERS in sample.dna.metadata:
-            state.dna_preprocess = [[], [], *sample.dna.metadata[DFT.FILTERS]]
+            dna_preprocess = [[], [], *sample.dna.metadata[DFT.FILTERS]]
         else:
-            state.dna_preprocess = [[], [], DFT.MIN_DP, DFT.MIN_GQ, DFT.MIN_VAF, DFT.MIN_STD]
+            dna_preprocess = [[], [], DFT.MIN_DP, DFT.MIN_GQ, DFT.MIN_VAF, DFT.MIN_STD]
 
-        if DFT.UMAP_LABEL in sample.dna.row_attrs:
-            state.init_dna = False
+        preprocess_dna(sample, True, *dna_preprocess)
 
     if state.init_protein:
         state.protein = sample.protein[:, :]
-        state.protein_preprocess = [[], DFT.NSP in sample.protein.layers]
-        if DFT.UMAP_LABEL in sample.protein.row_attrs:
-            state.init_protein = False
+        state.protein_preprocess = [[], DFT.NSP in state.protein.layers]
+
+        preprocess_protein(sample, True, state.protein_preprocess[0])
+
+    for a in [state.dna, state.protein]:
+        if a is not None:
+            available_assays.append(a)
+
+    preliminary_prepare(available_assays)
+    preliminary_cluster(available_assays)
+
+    return available_assays
 
 
-@st.cache(max_entries=1, hash_funcs=MOHASH_BOOL, show_spinner=False, allow_output_mutation=True)
+@st.cache(max_entries=1, hash_funcs=MOHASH_BOOL, show_spinner=False)
 def preprocess_dna(sample, clicked, drop_vars, keep_vars, dp, gq, af, std):
-    if state.init_dna or (state.dna_preprocess != [drop_vars, keep_vars, dp, gq, af, std] and clicked):
+    if state.dna_preprocess != [drop_vars, keep_vars, dp, gq, af, std] and clicked:
         interface.status('Processing DNA assay.')
 
         if len(drop_vars) > 0:
@@ -160,16 +188,14 @@ def preprocess_dna(sample, clicked, drop_vars, keep_vars, dp, gq, af, std):
         state.dna_preprocess = [drop_vars, keep_vars, dp, gq, af, std]
         state.dna = dna
 
-        if clicked:
+        if clicked and not state.init_dna:
             state.prepped = False
             state.clustered = False
 
-    return state.dna
 
-
-@st.cache(max_entries=1, hash_funcs=MOHASH_BOOL, show_spinner=False, allow_output_mutation=True)
+@st.cache(max_entries=1, hash_funcs=MOHASH_BOOL, show_spinner=False)
 def preprocess_protein(sample, clicked, drop_abs):
-    if state.init_protein or (state.protein_preprocess != [drop_abs, True] and clicked):
+    if state.protein_preprocess != [drop_abs, True] and clicked:
         interface.status('Processing protein assay.')
 
         protein = sample.protein.drop(drop_abs) if len(drop_abs) > 0 else sample.protein[:, :]
@@ -188,11 +214,9 @@ def preprocess_protein(sample, clicked, drop_abs):
         state.protein_preprocess = [drop_abs, True]
         state.protein = protein
 
-        if clicked:
+        if clicked and not state.init_protein:
             state.prepped = False
             state.clustered = False
-
-    return state.protein
 
 
 @st.cache(max_entries=1, hash_funcs=MOHASH, show_spinner=False)
@@ -228,17 +252,17 @@ def prepare(assay, scale_attribute, pca_attribute, umap_attribute, pca_comps):
     state.prepped = True
 
 
-def preliminary_prepare(dna, protein):
-    for prep_assay in [dna, protein]:
+def preliminary_prepare(available_assays):
+    for prep_assay in available_assays:
         if DFT.UMAP_LABEL not in prep_assay.row_attrs:
-            if prep_assay.name == dna.name:
+            if prep_assay.name == DNA_ASSAY:
                 prepare(prep_assay, AF_MISSING, SCALED_LABEL, AF_MISSING, min(len(prep_assay.ids()), 8))
-            elif prep_assay.name == protein.name:
+            elif prep_assay.name == PROTEIN_ASSAY:
                 prepare(prep_assay, DFT.LAYERS[prep_assay.name][0], SCALED_LABEL, PCA_LABEL, min(len(prep_assay.ids()), 8))
 
 
 @st.cache(max_entries=1, hash_funcs=MOHASH, show_spinner=False)
-def cluster(assay, method_func, description, random_state=42, **kwargs):
+def cluster(assay, method_func, description, **kwargs):
     similarity = None
     if 'similarity' in kwargs:
         similarity = kwargs['similarity']
@@ -255,8 +279,8 @@ def cluster(assay, method_func, description, random_state=42, **kwargs):
     state.clustered = True
 
 
-def preliminary_cluster(dna, protein):
-    for prep_assay in [dna, protein]:
+def preliminary_cluster(available_assays):
+    for prep_assay in available_assays:
         if DFT.CLUSTER_DESCRIPTION not in prep_assay.metadata:
             attribute, method, cluster_arg = DFT.CLUSTER_METHOD[prep_assay.name]
             description = f'{method} on {attribute} with {DFT.CLUSTER_OPTIONS[method][0]} set to {cluster_arg}'
@@ -265,10 +289,10 @@ def preliminary_cluster(dna, protein):
                 'method': method,
                 DFT.CLUSTER_OPTIONS[method][-1]: cluster_arg
             }
-            if prep_assay.name == dna.name:
+            if prep_assay.name == DNA_ASSAY:
                 cluster_kwargs['similarity'] = 0.8
                 description = description + f" with {cluster_kwargs['similarity']} similarity"
-            cluster(prep_assay, prep_assay.cluster, description, random_state=np.random.random(), **cluster_kwargs)
+            cluster(prep_assay, prep_assay.cluster, description, **cluster_kwargs)
 
 
 def metrics(sample):
@@ -387,7 +411,7 @@ def get_aggregates(assay_object, threshold=10):
     return agg_percent
 
 
-def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
+def visual(sample, assay, kind, plot_columns, kwargs):
     if kind == DFT.SIGNATURES:
         with plot_columns:
             med, std, pval, _ = assay.feature_signature(layer=kwargs['layer'])
@@ -422,13 +446,13 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
             new_pal = org_pal
 
             if kwargs[labelby] == DFT.PROTEIN_LABEL:
-                new_pal = protein.get_palette()
-                new_lab = protein.get_labels().copy()
+                new_pal = state.protein.get_palette()
+                new_lab = state.protein.get_labels().copy()
                 kwargs[labelby] = 'label'
 
             if kwargs[labelby] == DFT.DNA_LABEL:
-                new_pal = dna.get_palette()
-                new_lab = dna.get_labels().copy()
+                new_pal = state.dna.get_palette()
+                new_lab = state.dna.get_labels().copy()
                 kwargs[labelby] = 'label'
 
             assay.set_labels(new_lab)
@@ -462,12 +486,12 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
 
     elif kind == DFT.DNA_PROTEIN_PLOT:
         with plot_columns:
-            samp = mosample(protein=protein[:, kwargs['protein_features']], dna=dna[:, kwargs['dna_features']])
+            samp = mosample(protein=state.protein[:, kwargs['protein_features']], dna=state.dna[:, kwargs['dna_features']])
             samp.clone_vs_analyte(kwargs['analyte'])
             st.pyplot(plt.gcf())
     elif kind == DFT.DNA_PROTEIN_HEATMAP:
         with plot_columns:
-            samp = mosample(protein=protein[:, kwargs['protein_features']], dna=dna[:, kwargs['dna_features']])
+            samp = mosample(protein=state.protein[:, kwargs['protein_features']], dna=state.dna[:, kwargs['dna_features']])
             fig = samp.heatmap(clusterby=kwargs['clusterby'], sortby=kwargs['sortby'], drop='cnv', flatten=False)
             st.plotly_chart(fig)
 
@@ -477,7 +501,7 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
             metrics(sample)
     elif kind == DFT.READ_DEPTH:
         with plot_columns[0]:
-            if assay.name == protein.name:
+            if assay.name == PROTEIN_ASSAY:
                 total_reads = assay.layers[READS].sum(axis=1)
                 layer = assay.layers[kwargs['layer']]
 
@@ -518,7 +542,7 @@ def visual(sample, assay, dna, protein, kind, plot_columns, kwargs):
         with plot_columns[0]:
             if kwargs['download']:
                 if kwargs['item'] == DFT.ANNOTATION:
-                    data = np.array([dna.barcodes(), dna.get_labels(), protein.get_labels()]).T
+                    data = np.array([state.dna.barcodes(), state.dna.get_labels(), state.protein.get_labels()]).T
                     df = pd.DataFrame(data, columns=['barcode', 'dna', 'protein'])
                     name = f'./{sample.name}.annotation.csv'
                     df.to_csv(name, index=None)

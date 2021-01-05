@@ -6,7 +6,7 @@ import defaults as DFT
 import interface
 from compute import state
 
-from missionbio.h5.constants import DNA_ASSAY
+from missionbio.h5.constants import DNA_ASSAY, PROTEIN_ASSAY
 from missionbio.mosaic.constants import (
     PCA_LABEL,
     UMAP_LABEL
@@ -106,15 +106,20 @@ def files():
     return file, load_raw, apply_filter, kind, should_save, typed_name, info
 
 
-def preprocess(sample):
+def preprocess(sample, available_assays):
     drop_vars, keep_vars, dp, gq, af, std = state.dna_preprocess
-    drop_abs = state.protein_preprocess[0]
+    drop_abs = state.protein_preprocess[0] if state.protein_preprocess is not None else []
 
     with st.sidebar.beta_expander('Prepocessing'):
         info = st.empty()
-        assay_type = st.selectbox('Assay', ['DNA', 'Protein'])
 
-        if assay_type == 'DNA':
+        assay_name = {
+            DNA_ASSAY: 'DNA',
+            PROTEIN_ASSAY: 'Protein'
+        }
+        assay_type = st.selectbox('Assay', [a.name for a in available_assays], format_func=lambda x: assay_name[x])
+
+        if assay_type == DNA_ASSAY:
             dp = st.slider('Minimum read depth (DP)', min_value=0, max_value=100, value=int(dp))
             gq = st.slider('Minimum genotype quality (GQ)', min_value=0, max_value=100, value=int(gq))
             af = st.slider('Minimum allele frequency (VAF)', min_value=0, max_value=100, value=int(af))
@@ -127,7 +132,7 @@ def preprocess(sample):
             if len(keep_vars) != 0 and len(drop_vars) != 0:
                 interface.error('Cannot keep and drop variants both. Choose only one of the options')
 
-        elif assay_type == 'Protein':
+        elif assay_type == PROTEIN_ASSAY:
             ids = sample.protein.ids()
             ids = list(ids[ids.argsort()])
             drop_abs = st.multiselect('Antibodies to discard', ids, default=drop_abs)
@@ -136,7 +141,12 @@ def preprocess(sample):
 
         clicked = st.button('Process')
 
-    return assay_type, clicked, [drop_vars, keep_vars, dp, gq, af, std], [drop_abs]
+    assay_args = {}
+
+    assay_args[DNA_ASSAY] = [drop_vars, keep_vars, dp, gq, af, std]
+    assay_args[PROTEIN_ASSAY] = [drop_abs]
+
+    return assay_type, clicked, assay_args
 
 
 def prepare(assay):
@@ -160,7 +170,7 @@ def prepare(assay):
     return clicked, scale_attribute, pca_attribute, umap_attribute, pca_comps, info
 
 
-def cluster(assay, dna):
+def cluster(assay):
     title = 'Clustering'
     if not state.clustered:
         title += ' *'
@@ -179,7 +189,7 @@ def cluster(assay, dna):
             min_clone_size = st.slider('Minimum clone size (%)', 0.0, 10.0, 1.0)
             group_missing = st.checkbox('Group missing', True)
             ignore_zygosity = st.checkbox('Ignore Zygosity', False)
-            features = st.multiselect('Variants', list(dna.ids()))
+            features = st.multiselect('Variants', list(assay.ids()))
 
             description = f'{layer} counts on {len(features)} variants with {min_clone_size}% minimum clone size'
             if ignore_zygosity:
@@ -240,7 +250,7 @@ def customize(assay):
     return lab_map, pal
 
 
-def visual(assay, dna, protein, sample):
+def visual(assay, sample):
     interface.status('Creating visuals.')
 
     col1, col2 = st.beta_columns([0.07, 1])
@@ -326,19 +336,19 @@ def visual(assay, dna, protein, sample):
                 kwargs['features'] = features
         elif kind == DFT.DNA_PROTEIN_PLOT:
             kwargs['analyte'] = st.selectbox('Analyte', ['protein'], format_func=lambda a: analyte_map[a])
-            kwargs['dna_features'] = st.multiselect('DNA features', list(dna.ids()), dna.ids()[:4])
-            kwargs['protein_features'] = st.multiselect('Protein features', list(protein.ids()), protein.ids()[:4])
+            kwargs['dna_features'] = st.multiselect('DNA features', list(state.dna.ids()), state.dna.ids()[:4])
+            kwargs['protein_features'] = st.multiselect('Protein features', list(state.protein.ids()), state.protein.ids()[:4])
         elif kind == DFT.DNA_PROTEIN_HEATMAP:
             kwargs['clusterby'] = st.selectbox('Cluster by', ['dna', 'protein'], format_func=lambda a: analyte_map[a])
             kwargs['sortby'] = st.selectbox('Sort by', ['dna', 'protein'], format_func=lambda a: analyte_map[a])
-            kwargs['dna_features'] = st.multiselect('DNA features', list(dna.ids()), dna.ids())
-            kwargs['protein_features'] = st.multiselect('Protein features', list(protein.ids()), protein.ids())
+            kwargs['dna_features'] = st.multiselect('DNA features', list(state.dna.ids()), state.dna.ids())
+            kwargs['protein_features'] = st.multiselect('Protein features', list(state.protein.ids()), state.protein.ids())
 
         elif kind == DFT.METRICS:
             st.header('')
             interface.info('<b>Some values might be missing in case the raw<br> files are not loaded.</b> These metrics can be<br> pasted into the metrics sheet as is.')
         elif kind == DFT.READ_DEPTH:
-            if assay.name == protein.name:
+            if assay.name == PROTEIN_ASSAY:
                 kwargs['layer'] = st.selectbox('Layer', DFT.LAYERS[assay.name])
                 kwargs['colorby'] = st.selectbox('Color by', DFT.COLORBY[assay.name])
                 kwargs['features'] = st.multiselect('Features', list(assay.ids()), list(assay.ids())[:min(len(assay.ids()), 4)])
