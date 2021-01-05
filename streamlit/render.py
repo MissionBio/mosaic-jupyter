@@ -350,7 +350,7 @@ def visual(assay, sample):
         elif kind == DFT.READ_DEPTH:
             if assay.name == PROTEIN_ASSAY:
                 kwargs['layer'] = st.selectbox('Layer', DFT.LAYERS[assay.name])
-                kwargs['colorby'] = st.selectbox('Color by', DFT.COLORBY[assay.name])
+                kwargs['colorby'] = st.selectbox('Color by', ['density', None])
                 kwargs['features'] = st.multiselect('Features', list(assay.ids()), list(assay.ids())[:min(len(assay.ids()), 4)])
             else:
                 st.header('')
