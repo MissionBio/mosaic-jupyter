@@ -19,6 +19,8 @@ from missionbio.mosaic.constants import (
 )
 
 
+ROOT = pathlib.Path(__file__).parent
+
 STREAMLIT_STATIC_PATH = pathlib.Path(st.__path__[0]) / 'static'
 # We create a downloads directory within the streamlit static asset directory
 # and we write output files to it

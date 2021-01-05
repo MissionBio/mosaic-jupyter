@@ -28,17 +28,17 @@ def files():
 
         link = st.text_input('Load from s3', value='')
 
-        if not os.path.exists('./h5'):
-            os.mkdir('./h5/')
+        if not os.path.exists(DFT.ROOT / 'h5'):
+            os.mkdir(DFT.ROOT / 'h5')
 
-        if not os.path.exists('./h5/downloads'):
-            os.mkdir('./h5/downloads/')
+        if not os.path.exists(DFT.ROOT / 'h5/downloads'):
+            os.mkdir(DFT.ROOT / 'h5/downloads/')
 
-        if not os.path.exists('./h5/analyzed'):
-            os.mkdir('./h5/analyzed/')
+        if not os.path.exists(DFT.ROOT / 'h5/analyzed'):
+            os.mkdir(DFT.ROOT / 'h5/analyzed/')
 
-        downloaded_files = np.array(os.listdir('./h5/downloads/'))
-        analyzed_files = np.array(os.listdir('./h5/analyzed/'))
+        downloaded_files = np.array(os.listdir(DFT.ROOT / 'h5/downloads/'))
+        analyzed_files = np.array(os.listdir(DFT.ROOT / 'h5/analyzed/'))
         filenames = list(analyzed_files[analyzed_files.argsort()]) + list(downloaded_files[downloaded_files.argsort()])
         filenames = [None] + [f for f in filenames if f[-3:] == '.h5']
 
@@ -65,9 +65,9 @@ def files():
             file = link
         elif file is not None:
             if file in downloaded_files:
-                file = f'./h5/downloads/{file}'
+                file = DFT.ROOT / f'h5/downloads/{file}'
             else:
-                file = f'./h5/analyzed/{file}'
+                file = DFT.ROOT / f'h5/analyzed/{file}'
             kind = DFT.LOCAL
 
         typed_name = st.text_input('Save, download or delete the given file', value='')
@@ -77,9 +77,9 @@ def files():
                 typed_name = typed_name[:-3]
 
             if typed_name + '.h5' in analyzed_files:
-                typed_name = './h5/analyzed/' + typed_name + '.h5'
+                typed_name = DFT.ROOT / f'h5/analyzed/{typed_name}.h5'
             elif typed_name + '.h5' in downloaded_files:
-                typed_name = './h5/downloads/' + typed_name + '.h5'
+                typed_name = DFT.ROOT / f'h5/downloads/{typed_name}.h5'
             else:
                 interface.error(f'Cannot find "{typed_name}" in the available files')
 
