@@ -525,9 +525,10 @@ def visual(sample, assay, kind, plot_columns, kwargs):
     elif kind == DFT.ASSAY_SCATTER:
         if kwargs['draw']:
             with plot_columns[0]:
-                # sample.cnv_raw.normalize_barcodes()
-                # sample.protein_raw.normalize_barcodes()
-                sample.assay_scatter()
+                samp = sample[:]
+                samp.cnv_raw.normalize_barcodes()
+                samp.protein_raw.normalize_barcodes()
+                samp.assay_scatter()
                 st.pyplot(plt.gcf())
     elif kind == DFT.COLORS:
         colors = COLORS.copy()
