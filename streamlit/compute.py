@@ -73,12 +73,13 @@ def download(link):
     link = link.split('/')
     bucket, file = link[0], '/'.join(link[1:])
     filename = file.split('/')[-1]
-    filename = f'./h5/downloads/{filename}'
+    filename = DFT.ROOT / f'h5/downloads/{filename}'
+    filename = str(filename)
     try:
         s3.download_file(bucket, file, filename)
-    except Exception:
+    except Exception as e:
         interface.status('Done.')
-        interface.error('Could not find the given h5 file.')
+        interface.error(f'Could not find the given h5 file. {e}')
 
     return filename
 
@@ -117,10 +118,10 @@ def save(sample, name):
 
     samp = mosample(protein=state.protein, dna=state.dna, cnv=sample.cnv)
     try:
-        os.remove(f'./h5/analyzed/{name}.h5')
+        os.remove(DFT.ROOT / f'h5/analyzed/{name}.h5')
     except FileNotFoundError:
         pass
-    mio.save(samp, f'./h5/analyzed/{name}.h5')
+    mio.save(samp, DFT.ROOT / f'h5/analyzed/{name}.h5')
 
     interface.status('Done.')
     interface.rerun()
