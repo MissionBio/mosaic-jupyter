@@ -15,7 +15,8 @@ if kind == DFT.S3:
     file = compute.download(file)
 
 if file is None:
-    interface.error('Please use the options available in the sidebar to load a sample.')
+    interface.error('Please use the options available in the sidebar to load a sample.<br>'
+                    'New h5 files should be copied to the <i>/h5/downloads/</i> folder where the app is stored.')
 
 sample = compute.load(file, load_raw, apply_filter)
 interface.status('Done.')
