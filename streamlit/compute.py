@@ -5,6 +5,7 @@ from streamlit import caching
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 
 import missionbio.mosaic.io as mio
 from missionbio.mosaic.dna import Dna as modna
@@ -507,22 +508,44 @@ def visual(sample, assay, kind, plot_columns, kwargs):
                 layer = assay.layers[kwargs['layer']]
 
                 x = np.log10(total_reads)
-                st.write(assay.title)
 
                 feats = kwargs['features']
                 if len(feats) == 0:
                     feats = assay.ids()
 
-                for feat in feats:
+                nplots = len(feats)
+                nrows = round(nplots ** 0.5)
+                ncols = nplots // nrows + min(1, nplots % nrows)
+
+                fig = make_subplots(rows=nrows, cols=ncols,
+                                    x_title='log10(Total reads)',
+                                    y_title=kwargs['layer'],
+                                    subplot_titles=feats)
+
+                for i in range(len(feats)):
+                    row_num = i // ncols + 1
+                    col_num = i % ncols + 1
+                    feat = feats[i]
+
                     y = layer[:, np.where(assay.ids() == feat)[0]].flatten()
                     data = np.array([x, y]).T
-                    fig = assay.scatterplot(attribute=data, colorby=kwargs['colorby'])
-                    fig.layout.title = ''
-                    fig.layout.xaxis.title.text = 'log10(Total reads)'
-                    fig.layout.yaxis.title.text = f'Expression of {feat}'
-                    fig.layout.width = 400
-                    fig.layout.height = 400
-                    st.plotly_chart(fig)
+                    scatter = assay.scatterplot(attribute=data, colorby=kwargs['colorby'])
+                    fig.add_trace(scatter.data[0], row=row_num, col=col_num)
+
+
+                fig.update_yaxes(title='')
+                fig.update_xaxes(title='')
+                layout = scatter.layout
+                layout.update(coloraxis=dict(colorbar=dict(thickness=25,
+                                                           len=1 / nrows,
+                                                           yanchor="top",
+                                                           y=1.035,
+                                                           x=1.05,
+                                                           ticks="outside")))
+                fig.update_layout(layout,
+                                  width=max(500, 300 * ncols),
+                                  height=max(500, max(300 * nrows, 30 * len(feats) * nrows)))
+                st.plotly_chart(fig)
     elif kind == DFT.ASSAY_SCATTER:
         if kwargs['draw']:
             with plot_columns[0]:
