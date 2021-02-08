@@ -27,9 +27,13 @@ def run(sample, name):
 
 
 def set_defaults(sample):
-    sample.dna.del_metadata(DFT.ALL_IDS)
-    sample.dna.del_metadata(DFT.DROP_IDS)
-    sample.dna.del_metadata(DFT.KEEP_IDS)
+    def del_arg(assay, key):
+        if assay is not None:
+            assay.del_metadata(key)
 
-    sample.protein.del_metadata(DFT.ALL_IDS)
-    sample.protein.del_metadata(DFT.DROP_IDS)
+    del_arg(sample.dna, DFT.ALL_IDS)
+    del_arg(sample.dna, DFT.DROP_IDS)
+    del_arg(sample.dna, DFT.KEEP_IDS)
+
+    del_arg(sample.protein, DFT.ALL_IDS)
+    del_arg(sample.protein, DFT.DROP_IDS)

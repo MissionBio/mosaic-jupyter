@@ -14,8 +14,12 @@ def run(sample):
 
     assay_type, clicked, assay_args = render(sample, assay_names)
 
-    preprocess_dna(sample, clicked, *assay_args[DNA_ASSAY])
-    preprocess_protein(sample, clicked, *assay_args[PROTEIN_ASSAY])
+    first_pass_preprocess(sample, assay_args)
+
+    if assay_type == DNA_ASSAY:
+        preprocess_dna(sample, clicked, *assay_args)
+    elif assay_type == PROTEIN_ASSAY:
+        preprocess_protein(sample, clicked, *assay_args)
 
     if clicked:
         interface.rerun()
@@ -25,8 +29,8 @@ def run(sample):
         if a is not None:
             available_assays.append(a)
 
-        if a.name == assay_type:
-            current_assay = a
+            if a.name == assay_type:
+                current_assay = a
 
     interface.subheader(f'Analysing {assay_type} | {current_assay.shape[0]} cells | {current_assay.shape[1]} ids | {len(set(current_assay.get_labels()))} clusters')
 
@@ -34,11 +38,6 @@ def run(sample):
 
 
 def render(sample, assay_names):
-    drop_vars = sample.dna.metadata[DFT.DROP_IDS]
-    keep_vars = sample.dna.metadata[DFT.KEEP_IDS]
-    dp, gq, af, std = sample.dna.metadata[DFT.PREPROCESS_ARGS]
-    drop_abs = sample.protein.metadata[DFT.DROP_IDS]
-
     with st.sidebar.beta_expander('Prepocessing'):
         info = st.empty()
 
@@ -49,33 +48,42 @@ def render(sample, assay_names):
         assay_type = st.selectbox('Assay', assay_names, format_func=lambda x: assay_name[x])
 
         if assay_type == DNA_ASSAY:
+            dp, gq, af, std = sample.dna.metadata[DFT.PREPROCESS_ARGS]
             dp = st.slider('Minimum read depth (DP)', min_value=0, max_value=100, value=int(dp))
             gq = st.slider('Minimum genotype quality (GQ)', min_value=0, max_value=100, value=int(gq))
             af = st.slider('Minimum allele frequency (VAF)', min_value=0, max_value=100, value=int(af))
             std = st.slider('Minimum standard deviation of AF', min_value=0, max_value=100, value=int(std))
             ids = sample.dna.metadata[DFT.ALL_IDS]
             ids = list(ids[ids.argsort()])
-            drop_vars = st.multiselect('Variants to discard', ids, default=drop_vars)
-            keep_vars = st.multiselect('Variants to keep', ids, default=keep_vars)
+            drop_vars = st.multiselect('Variants to discard', ids, default=sample.dna.metadata[DFT.DROP_IDS])
+            keep_vars = st.multiselect('Variants to keep', ids, default=sample.dna.metadata[DFT.KEEP_IDS])
 
             if len(keep_vars) != 0 and len(drop_vars) != 0:
                 interface.error('Cannot keep and drop variants both. Choose only one of the options')
 
+            assay_args = [drop_vars, keep_vars, dp, gq, af, std]
+
         elif assay_type == PROTEIN_ASSAY:
             ids = sample.protein.metadata[DFT.ALL_IDS]
             ids = list(ids[ids.argsort()])
-            drop_abs = st.multiselect('Antibodies to discard', ids, default=drop_abs)
+            drop_abs = st.multiselect('Antibodies to discard', ids, default=sample.protein.metadata[DFT.DROP_IDS])
+
+            assay_args = [drop_abs]
 
         interface.info(f'{assay_type} currently loaded', info)
 
         clicked = st.button('Process')
 
-    assay_args = {}
-
-    assay_args[DNA_ASSAY] = [drop_vars, keep_vars, dp, gq, af, std]
-    assay_args[PROTEIN_ASSAY] = [drop_abs]
-
     return assay_type, clicked, assay_args
+
+
+def first_pass_preprocess(sample, assay_args):
+    for assay in [sample.dna, sample.protein]:
+        if assay is not None and assay.metadata[DFT.INITIALIZE]:
+            if assay.name == DNA_ASSAY:
+                preprocess_dna(sample, True, *assay_args)
+            elif assay.name == PROTEIN_ASSAY:
+                preprocess_protein(sample, True, [])
 
 
 # Want to call this function only when clicked

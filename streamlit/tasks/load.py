@@ -153,7 +153,7 @@ def load(path, load_raw, apply_filter):
 
 def init_defaults(sample):
     def add_arg(assay, key, val):
-        if key not in assay.metadata:
+        if assay is not None and key not in assay.metadata:
             assay.add_metadata(key, val)
 
     add_arg(sample.dna, DFT.PREPROCESS_ARGS, [DFT.MIN_DP, DFT.MIN_GQ, DFT.MIN_VAF, DFT.MIN_STD])
@@ -161,8 +161,9 @@ def init_defaults(sample):
     add_arg(sample.dna, DFT.KEEP_IDS, [])
     add_arg(sample.dna, DFT.ALL_IDS, sample.dna.ids())
 
-    add_arg(sample.protein, DFT.DROP_IDS, [])
-    add_arg(sample.protein, DFT.ALL_IDS, sample.protein.ids())
+    if sample.protein is not None:
+        add_arg(sample.protein, DFT.DROP_IDS, [])
+        add_arg(sample.protein, DFT.ALL_IDS, sample.protein.ids())
 
     for assay in [sample.dna, sample.protein]:
         add_arg(assay, DFT.VISUAL_TYPE, [DFT.VISUAL_CATEGORY_1, DFT.HEATMAP])
