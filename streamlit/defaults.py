@@ -18,6 +18,17 @@ from missionbio.mosaic.constants import (
     NGT_FILTERED
 )
 
+from missionbio.mosaic.dna import Dna as modna
+from missionbio.mosaic.protein import Protein as moprotein
+from missionbio.mosaic.sample import Sample as mosample
+
+
+MOHASH = {moprotein: lambda a: a.name + a.title + str(a.shape),
+          modna: lambda a: a.name + a.title + str(a.shape),
+          mosample: lambda a: a.name + str(a.dna.shape),
+          type(lambda _: None): lambda _: None}
+
+MOHASH_BOOL = {**MOHASH, int: lambda _: None, list: lambda _: None, type(''): lambda _: None}
 
 ROOT = pathlib.Path(__file__).parent
 
@@ -35,14 +46,7 @@ BLUE = '#1C5C6C'
 # ----------- Loading
 S3 = 's3'
 LOCAL = 'local'
-
-RUN_NUMBER = '__mosaic_run_number'
-PREPPED = '__mosaic_prep_arguments'
-CLUSTER_DESCRIPTION = '__mosaic_cluster_description'
-
-SCALE_ATTR = '__mosaic_data_prep_scale'
-PCA_ATTR = '__mosaic_data_prep_pca'
-UMAP_ATTR = '__mosaic_data_prep_umap'
+INITIALIZE = '__mosaic_initialize'
 
 # ----------- Preprocessing
 MIN_DP = 10
@@ -50,7 +54,17 @@ MIN_GQ = 30
 MIN_VAF = 20
 MIN_STD = 20
 
-FILTERS = '__mosaic_filters'
+PREPROCESS_ARGS = '__mosaic_preprocess_args'
+DROP_IDS = '__mosaic_drop_ids'
+KEEP_IDS = '__mosaic_keep_ids'
+ALL_IDS = '__mosaic_all_ids'
+
+# ----------- Clustering
+CLUSTER_DESCRIPTION = '__mosaic_cluster_description'
+
+SCALE_ATTR = '__mosaic_data_prep_scale'
+PCA_ATTR = '__mosaic_data_prep_pca'
+UMAP_ATTR = '__mosaic_data_prep_umap'
 
 
 CLUSTER_METHOD = {
