@@ -24,6 +24,8 @@ def run(assay, available_assays):
 
 def render(assay):
     title = 'Clustering'
+    if not assay.metadata[DFT.CLUSTERED]:
+        title += ' *'
 
     with st.sidebar.beta_expander(title):
         info = st.empty()
@@ -101,10 +103,12 @@ def cluster(assay, method_func, description, **kwargs):
         similarity = kwargs['similarity']
         del kwargs['similarity']
 
-    if DFT.CLUSTER_DESCRIPTION not in assay.metadata or assay.metadata[DFT.CLUSTER_DESCRIPTION] != description:
+    if DFT.CLUSTER_DESCRIPTION not in assay.metadata or assay.metadata[DFT.CLUSTER_DESCRIPTION] != description or not assay.metadata[DFT.CLUSTERED]:
         interface.status(f'Clustering {assay.name.replace("_", " ")}')
         method_func(**kwargs)
         if similarity is not None:
             assay.cluster_cleanup(AF_MISSING, similarity)
 
         assay.add_metadata(DFT.CLUSTER_DESCRIPTION, description)
+
+    assay.add_metadata(DFT.CLUSTERED, True)

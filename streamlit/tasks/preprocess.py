@@ -108,6 +108,10 @@ def preprocess_dna(sample, clicked, drop_vars, keep_vars, dp, gq, af, std):
         sample.dna.add_metadata(DFT.DROP_IDS, drop_vars)
         sample.dna.add_metadata(DFT.KEEP_IDS, keep_vars)
 
+        if not sample.dna.metadata[DFT.INITIALIZE]:
+            sample.dna.add_metadata(DFT.PREPPED, False)
+            sample.dna.add_metadata(DFT.CLUSTERED, False)
+
 
 @st.cache(max_entries=1, hash_funcs=DFT.MOHASH_BOOL, show_spinner=False)
 def preprocess_protein(sample, clicked, drop_abs):
@@ -125,3 +129,7 @@ def preprocess_protein(sample, clicked, drop_abs):
 
         sample.protein = protein
         sample.protein.add_metadata(DFT.DROP_IDS, drop_abs)
+
+        if not sample.protein.metadata[DFT.INITIALIZE]:
+            sample.protein.add_metadata(DFT.PREPPED, False)
+            sample.protein.add_metadata(DFT.CLUSTERED, False)

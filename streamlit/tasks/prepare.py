@@ -30,6 +30,8 @@ def run(assay, available_assays):
 
 def render(assay):
     title = 'Data preparation'
+    if not assay.metadata[DFT.PREPPED]:
+        title += ' *'
 
     with st.sidebar.beta_expander(title):
         info = st.empty()
@@ -61,7 +63,7 @@ def prepare(assay, scale_attribute, pca_attribute, umap_attribute, pca_comps):
     interface.status(f'Preparing {assay.name.replace("_", " ")} data.')
 
     attr = scale_attribute
-    if SCALED_LABEL not in assay.layers or assay.metadata[DFT.SCALE_ATTR] != attr:
+    if SCALED_LABEL not in assay.layers or assay.metadata[DFT.SCALE_ATTR] != attr or not assay.metadata[DFT.PREPPED]:
         assay.scale_data(scale_attribute)
         assay.add_metadata(DFT.SCALE_ATTR, attr)
 
@@ -69,7 +71,7 @@ def prepare(assay, scale_attribute, pca_attribute, umap_attribute, pca_comps):
     if pca_attribute == SCALED_LABEL:
         attr = f'scaled {scale_attribute}'
 
-    if PCA_LABEL not in assay.row_attrs or assay.metadata[DFT.PCA_ATTR] != attr:
+    if PCA_LABEL not in assay.row_attrs or assay.metadata[DFT.PCA_ATTR] != attr or not assay.metadata[DFT.PREPPED]:
         assay.run_pca(pca_attribute, components=pca_comps)
         assay.add_metadata(DFT.PCA_ATTR, attr)
 
@@ -82,6 +84,11 @@ def prepare(assay, scale_attribute, pca_attribute, umap_attribute, pca_comps):
         else:
             attr = f'PCA of {pca_attribute}'
 
-    if UMAP_LABEL not in assay.row_attrs or assay.metadata[DFT.UMAP_ATTR] != attr:
+    if UMAP_LABEL not in assay.row_attrs or assay.metadata[DFT.UMAP_ATTR] != attr or not assay.metadata[DFT.PREPPED]:
         assay.run_umap(attribute=umap_attribute, random_state=42)
         assay.add_metadata(DFT.UMAP_ATTR, attr)
+
+    if not assay.metadata[DFT.INITIALIZE]:
+        assay.add_metadata(DFT.CLUSTERED, False)
+
+    assay.add_metadata(DFT.PREPPED, True)

@@ -59,7 +59,11 @@ DROP_IDS = '__mosaic_drop_ids'
 KEEP_IDS = '__mosaic_keep_ids'
 ALL_IDS = '__mosaic_all_ids'
 
+# ----------- Preparing
+PREPPED = '__mosaic_prepped'
+
 # ----------- Clustering
+CLUSTERED = '__mosaic_clustered'
 CLUSTER_DESCRIPTION = '__mosaic_cluster_description'
 
 SCALE_ATTR = '__mosaic_data_prep_scale'
