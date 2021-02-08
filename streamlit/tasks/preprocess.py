@@ -101,7 +101,7 @@ def preprocess_dna(sample, clicked, drop_vars, keep_vars, dp, gq, af, std):
 
         if len(dna_vars) == 0:
             interface.status('Done.')
-            interface.error('No variants found. Adjust the filters and process again.')
+            interface.error('No variants found. Adjust the filters and process again. Make sure "Filter" is deselected in the Files section.')
 
         sample.dna = sample.dna[:, dna_vars]
         sample.dna.add_metadata(DFT.PREPROCESS_ARGS, [dp, gq, af, std])
