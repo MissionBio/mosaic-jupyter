@@ -24,42 +24,32 @@ def run(sample, assay):
 def render(sample, assay):
     interface.status('Creating visuals.')
 
-    col1, col2 = st.beta_columns([0.07, 1])
-    analysis_type = DFT.PRIMARY
-    with col1:
-        if st.button(DFT.PRIMARY):
-            analysis_type = DFT.PRIMARY
-    with col2:
-        if st.button(DFT.ADVANCED):
-            analysis_type = DFT.ADVANCED
+    category, kind = assay.metadata[DFT.VISUAL_TYPE]
+    options = DFT.VISUALS[category][1]
+    column_sizes = DFT.VISUALS[category][0]
+    columns = st.beta_columns(column_sizes)
+    with columns[1]:
+        new_category = st.selectbox("", list(DFT.VISUALS.keys()))
+        if new_category != category:
+            assay.add_metadata(DFT.VISUAL_TYPE, [new_category, DFT.VISUALS[new_category][1][0]])
+            interface.rerun()
 
-    if analysis_type == DFT.PRIMARY:
-        types_container, args_conatiner, plot_columns = st.beta_columns([0.5, 0.75, 2])
-        with types_container:
-            kind = st.radio('', [DFT.SIGNATURES,
-                                 DFT.HEATMAP,
-                                 DFT.SCATTERPLOT,
-                                 DFT.FEATURE_SCATTER,
-                                 DFT.VIOLINPLOT,
-                                 DFT.RIDGEPLOT,
-                                 DFT.STRIPPLOT,
-                                 DFT.DNA_PROTEIN_PLOT,
-                                 DFT.DNA_PROTEIN_HEATMAP], index=1)
-    elif analysis_type == DFT.ADVANCED:
-        container = st.empty()
-        plot_types = [DFT.COLORS,
-                      DFT.METRICS,
-                      DFT.READ_DEPTH,
-                      DFT.ASSAY_SCATTER,
-                      DFT.DOWNLOAD]
+    for i in range(len(options)):
+        with columns[i + 2]:
+            st.markdown(f"<p style='margin-bottom:33px'></p>", unsafe_allow_html=True)
+            clicked = st.button(options[i], key=f'visual-{options[i]}')
+            if clicked:
+                kind = options[i]
+                assay.add_metadata(DFT.VISUAL_TYPE, [category, kind])
 
-        kind = container.radio('', plot_types, key='plot_selector')
-        columns = container.beta_columns(DFT.LAYOUT[kind])
-        types_container = columns[0]
+    if kind in DFT.LAYOUT:
+        columns = st.beta_columns(DFT.LAYOUT[kind])
+        args_conatiner = columns[0]
+        plot_columns = columns[1:]
+    else:
+        columns = st.beta_columns([0.05, 0.75, 0.1, 2])
         args_conatiner = columns[1]
-        plot_columns = columns[2:]
-        with types_container:
-            kind = st.radio('', plot_types, key='plot_selector')
+        plot_columns = columns[3]
 
     with args_conatiner:
         kwargs = {}
@@ -222,11 +212,11 @@ def visual(sample, assay, kind, plot_columns, kwargs):
             st.plotly_chart(fig)
 
     elif kind == DFT.METRICS:
-        with plot_columns[0]:
+        with plot_columns:
             st.header('')
             metrics(sample)
     elif kind == DFT.READ_DEPTH:
-        with plot_columns[0]:
+        with plot_columns:
             if assay.name == PROTEIN_ASSAY:
                 total_reads = assay.layers[READS].sum(axis=1)
                 layer = assay.layers[kwargs['layer']]
@@ -271,7 +261,7 @@ def visual(sample, assay, kind, plot_columns, kwargs):
                 st.plotly_chart(fig)
     elif kind == DFT.ASSAY_SCATTER:
         if kwargs['draw']:
-            with plot_columns[0]:
+            with plot_columns:
                 samp = sample[:]
                 samp.cnv_raw.normalize_barcodes()
                 samp.protein_raw.normalize_barcodes()
@@ -287,7 +277,7 @@ def visual(sample, assay, kind, plot_columns, kwargs):
         for i in range(len(colors)):
             plot_columns[i % len(plot_columns)].color_picker(colors[i], colors[i], key=f'constant-colors-{colors[i]}-{i}')
     elif kind == DFT.DOWNLOAD:
-        with plot_columns[0]:
+        with plot_columns:
             if kwargs['download']:
                 if kwargs['item'] == DFT.ANNOTATION:
                     data = np.array([sample.dna.barcodes(), sample.dna.get_labels(), sample.protein.get_labels()]).T

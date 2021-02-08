@@ -160,12 +160,12 @@ def init_defaults(sample):
     add_arg(sample.dna, DFT.DROP_IDS, [])
     add_arg(sample.dna, DFT.KEEP_IDS, [])
     add_arg(sample.dna, DFT.ALL_IDS, sample.dna.ids())
-    add_arg(sample.dna, DFT.INITIALIZE, True)
-    add_arg(sample.dna, DFT.PREPPED, True)
-    add_arg(sample.dna, DFT.CLUSTERED, True)
 
     add_arg(sample.protein, DFT.DROP_IDS, [])
     add_arg(sample.protein, DFT.ALL_IDS, sample.protein.ids())
-    add_arg(sample.protein, DFT.INITIALIZE, True)
-    add_arg(sample.protein, DFT.PREPPED, True)
-    add_arg(sample.protein, DFT.CLUSTERED, True)
+
+    for assay in [sample.dna, sample.protein]:
+        add_arg(assay, DFT.VISUAL_TYPE, [DFT.VISUAL_CATEGORY_1, DFT.HEATMAP])
+        add_arg(assay, DFT.PREPPED, True)
+        add_arg(assay, DFT.CLUSTERED, True)
+        add_arg(assay, DFT.INITIALIZE, True)

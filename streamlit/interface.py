@@ -41,9 +41,8 @@ def download(download_path):
 
 
 def init():
-    global STATUS, ERROR, SUBHEADER, DOWNLOAD
+    global ERROR, DOWNLOAD, SUBHEADER, STATUS
 
-    st.title('Mosaic')
     ERROR = st.empty()
     DOWNLOAD = st.empty()
     SUBHEADER = st.empty()

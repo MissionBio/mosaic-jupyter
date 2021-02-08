@@ -92,7 +92,11 @@ NSP = 'NSP'
 TOTAL_READS = 'total_reads'
 
 # ----------- Primary visuals
-PRIMARY = 'Primary'
+VISUAL_TYPE = '__mosaic_visual_type'
+
+VISUAL_CATEGORY_1 = 'Plots'
+VISUAL_CATEGORY_2 = 'Tables'
+VISUAL_CATEGORY_3 = 'Multiomic plots'
 
 SIGNATURES = 'Signatures'
 HEATMAP = 'Heatmap'
@@ -103,7 +107,37 @@ RIDGEPLOT = 'Ridgeplot'
 STRIPPLOT = 'Stripplot'
 DNA_PROTEIN_PLOT = 'DNA vs Protein'
 DNA_PROTEIN_HEATMAP = 'Sample Heatmap'
+DOWNLOAD = 'Download'
+METRICS = 'Metrics'
+READ_DEPTH = 'Read Depth'
+ASSAY_SCATTER = 'Assay Scatter'
+COLORS = 'Colors'
 
+LAYOUT = {
+    COLORS: [0.5] + [1] * 10,
+}
+
+VISUALS = {VISUAL_CATEGORY_1: [[0.25, 3, 1, 1.1, 1.35, 1, 1, 1, 4.75],
+                               [HEATMAP,
+                                SCATTERPLOT,
+                                FEATURE_SCATTER,
+                                VIOLINPLOT,
+                                RIDGEPLOT,
+                                STRIPPLOT]],
+
+           VISUAL_CATEGORY_2: [[0.25, 2.75, 1, 0.75, 0.75, 1, 7.75],
+                               [SIGNATURES,
+                                COLORS,
+                                METRICS,
+                                DOWNLOAD]],
+
+           VISUAL_CATEGORY_3: [[0.25, 2.5, 1.25, 1.35, 1, 1.5, 5.25],
+                               [DNA_PROTEIN_PLOT,
+                                DNA_PROTEIN_HEATMAP,
+                                READ_DEPTH,
+                                ASSAY_SCATTER]]}
+
+# ----------- Visuals options
 SPLITBY = {
     DNA_ASSAY: [DNA_LABEL, PROTEIN_LABEL, 'sample_name', None],
     PROTEIN_ASSAY: [PROTEIN_LABEL, DNA_LABEL, 'sample_name', None]
@@ -116,24 +150,6 @@ LAYERS = {
 COLORBY = {
     DNA_ASSAY: [DNA_LABEL, PROTEIN_LABEL, 'sample_name', AF, AF_MISSING, NGT, NGT_FILTERED, GQ, DP, 'density', None],
     PROTEIN_ASSAY: [PROTEIN_LABEL, DNA_LABEL, 'sample_name', CLR, ASINH, NSP, SCALED_LABEL, 'density', None]
-}
-
-# ----------- Advanced visuals
-ADVANCED = 'Advanced'
-QC = 'QC'
-DOWNLOAD = 'Download'
-METRICS = 'Metrics'
-READ_DEPTH = 'Read Depth'
-ASSAY_SCATTER = 'Assay Scatter'
-COLORS = 'Colors'
-
-LAYOUT = {
-    COLORS: [1.5, 0.5] + [1] * 10,
-    METRICS: [0.5, 1, 2],
-    READ_DEPTH: [0.5, 0.75, 2],
-    ASSAY_SCATTER: [0.5, 0.75, 2],
-    QC: [0.5, 0.75, 2],
-    DOWNLOAD: [0.5, 0.75, 2]
 }
 
 ANNOTATION = 'Annotation'
