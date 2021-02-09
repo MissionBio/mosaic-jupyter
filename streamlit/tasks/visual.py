@@ -138,7 +138,7 @@ def visual(sample, assay, kind, plot_columns, kwargs):
     elif kind == DFT.VAR_ANNOTATIONS:
         df = get_annotations(sample.dna.ids())
         with st.beta_columns([0.2, 10, 1])[1]:
-            st.dataframe(df, height=1080)
+            st.dataframe(df, height=650)
     elif kind == DFT.SIGNATURES:
         with plot_columns:
             med, std, pval, _ = assay.feature_signature(layer=kwargs['layer'])
@@ -154,7 +154,7 @@ def visual(sample, assay, kind, plot_columns, kwargs):
             df = df[['Variant'] + list(df.columns[:-1])]
 
             st.write(kwargs['attribute'])
-            st.dataframe(df, height=1080)
+            st.dataframe(df, height=650)
     elif kind == DFT.METRICS:
         with plot_columns:
             st.header('')
