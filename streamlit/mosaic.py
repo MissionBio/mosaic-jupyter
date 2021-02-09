@@ -24,9 +24,7 @@ current_assay, available_assays = preprocess.run(sample)
 prepare.run(current_assay, available_assays)
 cluster.run(current_assay, available_assays)
 customize.run(current_assay)
-
-if should_save:
-    save.run(sample, save_name)
+save.run(sample, save_name, should_save)
 
 visual.run(sample, current_assay)
 
