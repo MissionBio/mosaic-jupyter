@@ -1,9 +1,10 @@
 import streamlit as st
+import numpy as np
 
 import interface
 import defaults as DFT
 
-from missionbio.h5.constants import DNA_ASSAY
+from missionbio.h5.constants import DNA_ASSAY, PROTEIN_ASSAY
 from missionbio.mosaic.constants import (
     PCA_LABEL,
     UMAP_LABEL,
@@ -33,6 +34,8 @@ def render(assay):
         all_methods = ['dbscan', 'hdbscan', 'graph-community', 'kmeans']
         if assay.name == DNA_ASSAY:
             all_methods.append('count')
+        elif assay.name == PROTEIN_ASSAY:
+            all_methods.append('gating')
         method = st.selectbox('Method', all_methods)
 
         cluster_kwargs = {}
@@ -58,6 +61,34 @@ def render(assay):
             }
 
             method = assay.count
+
+        elif method == 'gating':
+            layer = st.selectbox('Layer', [DFT.CLR, DFT.NSP, DFT.ASINH])
+            data = assay.get_attribute(layer, constraint='row+col')
+            columns = st.beta_columns([0.6, 0.75])
+            with columns[0]:
+                feature_x = st.selectbox('Feature x', list(assay.ids()), index=0)
+                feature_y = st.selectbox('Feature y', list(assay.ids()), index=1)
+            with columns[1]:
+                vals = data[feature_x].values
+                threshold_x = st.number_input('X threshold', float(min(vals)), float(max(vals)), float(vals.mean()), step=None)
+                vals = data[feature_y].values
+                threshold_y = st.number_input('Y Threshold', float(min(vals)), float(max(vals)), float(vals.mean()), step=None)
+
+            fig = get_gating_plot(assay, layer, feature_x, feature_y, threshold_x, threshold_y)
+            st.plotly_chart(fig)
+
+            description = f'gating on {layer}, with {feature_x}({threshold_x}) and {feature_y}({threshold_y})'
+
+            cluster_kwargs = {
+                'assay_to_gate': assay,
+                'features': [feature_x, feature_y],
+                'thresholds': [threshold_x, threshold_y],
+                'layer': layer,
+            }
+
+            method = gate_protein
+
         else:
             attribute = st.selectbox('Attribute', [UMAP_LABEL, PCA_LABEL], key='Prepare Attribute')
             cluster_arg = st.slider(*DFT.CLUSTER_OPTIONS[method][:-1])
@@ -94,6 +125,32 @@ def first_pass_cluster(available_assays):
                 cluster_kwargs['similarity'] = 0.8
                 description = description + f" with {cluster_kwargs['similarity']} similarity"
             cluster(prep_assay, prep_assay.cluster, description, **cluster_kwargs)
+
+
+@st.cache(max_entries=1, hash_funcs=DFT.MOHASH, show_spinner=False)
+def get_gating_plot(assay, layer, feature_x, feature_y, threshold_x, threshold_y):
+    fig = assay.feature_scatter(layer=layer, ids=[feature_x, feature_y], colorby='density')
+    fig.add_hline(y=threshold_y, line_width=2)
+    fig.add_vline(x=threshold_x, line_width=2)
+    fig.update_layout(coloraxis_showscale=False, title='', height=275, width=275,
+                      xaxis_fixedrange=True, yaxis_fixedrange=True, xaxis_title_font_size=10, yaxis_title_font_size=10,
+                      margin=dict(l=0, r=1, b=1, t=1), plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+    fig.update_traces(hovertemplate='%{x:.2f}, %{y:.2f}<extra></extra>')
+
+    return fig
+
+
+def gate_protein(assay_to_gate, layer, features, thresholds):
+    data = assay_to_gate.get_attribute(layer, constraint='row+col')
+    data = data[features]
+    lab_map = {}
+    bars = data.index.values
+    lab_map[f'{features[0]}+ & {features[1]}+'] = bars[np.logical_and(data[features[0]] > thresholds[0], data[features[1]] > thresholds[1])]
+    lab_map[f'{features[0]}+ & {features[1]}-'] = bars[np.logical_and(data[features[0]] > thresholds[0], data[features[1]] < thresholds[1])]
+    lab_map[f'{features[0]}- & {features[1]}+'] = bars[np.logical_and(data[features[0]] < thresholds[0], data[features[1]] > thresholds[1])]
+    lab_map[f'{features[0]}- & {features[1]}-'] = bars[np.logical_and(data[features[0]] < thresholds[0], data[features[1]] < thresholds[1])]
+
+    assay_to_gate.set_labels(lab_map)
 
 
 @st.cache(max_entries=1, hash_funcs=DFT.MOHASH, show_spinner=False)
