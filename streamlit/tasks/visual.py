@@ -33,7 +33,7 @@ def render(sample, assay):
     with columns[0]:
         new_category = st.selectbox("", list(DFT.VISUALS.keys()))
         if new_category != category:
-            assay.add_metadata(DFT.VISUAL_TYPE, [new_category, None])
+            assay.add_metadata(DFT.VISUAL_TYPE, [new_category, DFT.VISUALS[new_category][1][0]])
             interface.rerun()
 
     for i in range(len(options)):
@@ -130,66 +130,10 @@ def render(sample, assay):
 
 
 def visual(sample, assay, kind, plot_columns, kwargs):
-    if kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT, DFT.STRIPPLOT]:
+    if kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT, DFT.STRIPPLOT, DFT.DNA_PROTEIN_HEATMAP]:
         with plot_columns:
-            plot_funcs = {
-                DFT.HEATMAP: assay.heatmap,
-                DFT.SCATTERPLOT: assay.scatterplot,
-                DFT.FEATURE_SCATTER: assay.feature_scatter,
-                DFT.VIOLINPLOT: assay.violinplot,
-                DFT.RIDGEPLOT: assay.ridgeplot,
-                DFT.STRIPPLOT: assay.stripplot
-            }
-
-            labelby = None
-            if 'splitby' in kwargs:
-                labelby = 'splitby'
-            elif 'colorby' in kwargs:
-                labelby = 'colorby'
-
-            org_lab = assay.get_labels().copy()
-            org_pal = assay.get_palette()
-            new_lab = org_lab
-            new_pal = org_pal
-
-            if kwargs[labelby] == DFT.PROTEIN_LABEL:
-                new_pal = sample.protein.get_palette()
-                new_lab = sample.protein.get_labels().copy()
-                kwargs[labelby] = 'label'
-
-            if kwargs[labelby] == DFT.DNA_LABEL:
-                new_pal = sample.dna.get_palette()
-                new_lab = sample.dna.get_labels().copy()
-                kwargs[labelby] = 'label'
-
-            assay.set_labels(new_lab)
-            assay.set_palette(new_pal)
-
-            if 'cluster' in kwargs:
-                bars_ordered = assay.clustered_barcodes(orderby=kwargs['attribute'])
-                if not kwargs['cluster']:
-                    labels = assay.get_labels()[[np.where(assay.barcodes() == b)[0][0] for b in bars_ordered]]
-                    bars_ordered = []
-                    for lab in pd.unique(labels):
-                        bars_ordered.extend(assay.barcodes(lab))
-                    bars_ordered = np.array(bars_ordered)
-
-                kwargs['bars_order'] = bars_ordered
-                del kwargs['cluster']
-
-            if kind == DFT.VIOLINPLOT:
-                update = kwargs['points']
-                del kwargs['points']
-
-            fig = plot_funcs[kind](**kwargs)
-
-            if kind == DFT.VIOLINPLOT and update:
-                fig.update_traces(points='all', pointpos=-0.5, box_width=0.6, side='positive', marker_size=3)
-
+            fig = draw_plots(sample, assay, kind, kwargs)
             st.plotly_chart(fig)
-
-            assay.set_labels(org_lab)
-            assay.set_palette(org_pal)
 
     elif kind == DFT.VAR_ANNOTATIONS:
         df = get_annotations(sample.dna.ids())
@@ -235,54 +179,10 @@ def visual(sample, assay, kind, plot_columns, kwargs):
             samp = mosample(protein=sample.protein[:, kwargs['protein_features']], dna=sample.dna[:, kwargs['dna_features']])
             samp.clone_vs_analyte(kwargs['analyte'])
             st.pyplot(plt.gcf())
-    elif kind == DFT.DNA_PROTEIN_HEATMAP:
-        with plot_columns:
-            samp = mosample(protein=sample.protein[:, kwargs['protein_features']], dna=sample.dna[:, kwargs['dna_features']])
-            fig = samp.heatmap(clusterby=kwargs['clusterby'], sortby=kwargs['sortby'], drop='cnv', flatten=False)
-            st.plotly_chart(fig)
     elif kind == DFT.READ_DEPTH:
         with plot_columns:
             if assay.name == PROTEIN_ASSAY:
-                total_reads = assay.layers[READS].sum(axis=1)
-                layer = assay.layers[kwargs['layer']]
-
-                x = np.log10(total_reads)
-
-                feats = kwargs['features']
-                if len(feats) == 0:
-                    feats = assay.ids()
-
-                nplots = len(feats)
-                nrows = round(nplots ** 0.5)
-                ncols = nplots // nrows + min(1, nplots % nrows)
-
-                fig = make_subplots(rows=nrows, cols=ncols,
-                                    x_title='log10(Total reads)',
-                                    y_title=kwargs['layer'],
-                                    subplot_titles=feats)
-
-                for i in range(len(feats)):
-                    row_num = i // ncols + 1
-                    col_num = i % ncols + 1
-                    feat = feats[i]
-
-                    y = layer[:, np.where(assay.ids() == feat)[0]].flatten()
-                    data = np.array([x, y]).T
-                    scatter = assay.scatterplot(attribute=data, colorby=kwargs['colorby'])
-                    fig.add_trace(scatter.data[0], row=row_num, col=col_num)
-
-                fig.update_yaxes(title='')
-                fig.update_xaxes(title='')
-                layout = scatter.layout
-                layout.update(coloraxis=dict(colorbar=dict(thickness=25,
-                                                           len=1 / nrows,
-                                                           yanchor="top",
-                                                           y=1.035,
-                                                           x=1.05,
-                                                           ticks="outside")))
-                fig.update_layout(layout,
-                                  width=max(500, 300 * ncols),
-                                  height=max(500, max(300 * nrows, 30 * len(feats) * nrows)))
+                fig = draw_plots(sample, assay, kind, kwargs)
                 st.plotly_chart(fig)
     elif kind == DFT.ASSAY_SCATTER:
         if kwargs['draw']:
@@ -292,6 +192,115 @@ def visual(sample, assay, kind, plot_columns, kwargs):
                 samp.protein_raw.normalize_barcodes()
                 samp.assay_scatter()
                 st.pyplot(plt.gcf())
+
+
+@st.cache(max_entries=50, hash_funcs=DFT.MOHASH, show_spinner=False, allow_output_mutation=True, ttl=3600)
+def draw_plots(sample, assay, kind, kwargs):
+    if kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT, DFT.STRIPPLOT]:
+        plot_funcs = {
+            DFT.HEATMAP: assay.heatmap,
+            DFT.SCATTERPLOT: assay.scatterplot,
+            DFT.FEATURE_SCATTER: assay.feature_scatter,
+            DFT.VIOLINPLOT: assay.violinplot,
+            DFT.RIDGEPLOT: assay.ridgeplot,
+            DFT.STRIPPLOT: assay.stripplot
+        }
+
+        labelby = None
+        if 'splitby' in kwargs:
+            labelby = 'splitby'
+        elif 'colorby' in kwargs:
+            labelby = 'colorby'
+
+        org_lab = assay.get_labels().copy()
+        org_pal = assay.get_palette()
+        new_lab = org_lab
+        new_pal = org_pal
+
+        if kwargs[labelby] == DFT.PROTEIN_LABEL:
+            new_pal = sample.protein.get_palette()
+            new_lab = sample.protein.get_labels().copy()
+            kwargs[labelby] = 'label'
+
+        if kwargs[labelby] == DFT.DNA_LABEL:
+            new_pal = sample.dna.get_palette()
+            new_lab = sample.dna.get_labels().copy()
+            kwargs[labelby] = 'label'
+
+        assay.set_labels(new_lab)
+        assay.set_palette(new_pal)
+
+        if 'cluster' in kwargs:
+            bars_ordered = assay.clustered_barcodes(orderby=kwargs['attribute'])
+            if not kwargs['cluster']:
+                labels = assay.get_labels()[[np.where(assay.barcodes() == b)[0][0] for b in bars_ordered]]
+                bars_ordered = []
+                for lab in pd.unique(labels):
+                    bars_ordered.extend(assay.barcodes(lab))
+                bars_ordered = np.array(bars_ordered)
+
+            kwargs['bars_order'] = bars_ordered
+            del kwargs['cluster']
+
+        if kind == DFT.VIOLINPLOT:
+            update = kwargs['points']
+            del kwargs['points']
+
+        fig = plot_funcs[kind](**kwargs)
+
+        if kind == DFT.VIOLINPLOT and update:
+            fig.update_traces(points='all', pointpos=-0.5, box_width=0.6, side='positive', marker_size=3)
+
+        assay.set_labels(org_lab)
+        assay.set_palette(org_pal)
+
+    elif kind == DFT.DNA_PROTEIN_HEATMAP:
+        samp = mosample(protein=sample.protein[:, kwargs['protein_features']], dna=sample.dna[:, kwargs['dna_features']])
+        fig = samp.heatmap(clusterby=kwargs['clusterby'], sortby=kwargs['sortby'], drop='cnv', flatten=False)
+
+    elif kind == DFT.READ_DEPTH:
+        total_reads = assay.layers[READS].sum(axis=1)
+        layer = assay.layers[kwargs['layer']]
+
+        x = np.log10(total_reads)
+
+        feats = kwargs['features']
+        if len(feats) == 0:
+            feats = assay.ids()
+
+        nplots = len(feats)
+        nrows = round(nplots ** 0.5)
+        ncols = nplots // nrows + min(1, nplots % nrows)
+
+        fig = make_subplots(rows=nrows, cols=ncols,
+                            x_title='log10(Total reads)',
+                            y_title=kwargs['layer'],
+                            subplot_titles=feats)
+
+        for i in range(len(feats)):
+            row_num = i // ncols + 1
+            col_num = i % ncols + 1
+            feat = feats[i]
+
+            y = layer[:, np.where(assay.ids() == feat)[0]].flatten()
+            data = np.array([x, y]).T
+            scatter = assay.scatterplot(attribute=data, colorby=kwargs['colorby'])
+            fig.add_trace(scatter.data[0], row=row_num, col=col_num)
+
+        fig.update_yaxes(title='')
+        fig.update_xaxes(title='')
+        layout = scatter.layout
+        layout.update(coloraxis=dict(colorbar=dict(thickness=25,
+                                                   len=1 / nrows,
+                                                   yanchor="top",
+                                                   y=1.035,
+                                                   x=1.05,
+                                                   ticks="outside")))
+        fig.update_layout(layout,
+                          width=max(500, 300 * ncols),
+                          height=max(500, max(300 * nrows, 30 * len(feats) * nrows)))
+
+    return fig
 
 
 @st.cache(show_spinner=False)

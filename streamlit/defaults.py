@@ -136,9 +136,9 @@ VISUALS = {VISUAL_CATEGORY_1: [[2, 1, 1.1, 1.45, 1, 1, 1, 5],
                                 METRICS,
                                 DOWNLOAD]],
 
-           VISUAL_CATEGORY_3: [[1.8, 1.25, 1.35, 1, 1.5, 5],
-                               [DNA_PROTEIN_PLOT,
-                                DNA_PROTEIN_HEATMAP,
+           VISUAL_CATEGORY_3: [[1.8, 1.35, 1.25, 1, 1.5, 5],
+                               [DNA_PROTEIN_HEATMAP,
+                                DNA_PROTEIN_PLOT,
                                 READ_DEPTH,
                                 ASSAY_SCATTER]]}
 
