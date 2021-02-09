@@ -65,7 +65,7 @@ def render(assay):
         elif method == 'gating':
             layer = st.selectbox('Layer', [DFT.CLR, DFT.NSP, DFT.ASINH])
             data = assay.get_attribute(layer, constraint='row+col')
-            columns = st.beta_columns([0.6, 0.75])
+            columns = st.beta_columns([0.55, 0.75])
             with columns[0]:
                 feature_x = st.selectbox('Feature x', list(assay.ids()), index=0)
                 feature_y = st.selectbox('Feature y', list(assay.ids()), index=1)

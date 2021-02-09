@@ -30,6 +30,11 @@ MOHASH = {moprotein: lambda a: a.name + a.title + str(a.shape),
 
 MOHASH_BOOL = {**MOHASH, int: lambda _: None, list: lambda _: None, type(''): lambda _: None}
 
+MOHASH_VISUALS = {moprotein: lambda a: a.name + a.title + str(a.shape) + ','.join(a.get_labels()),
+                  modna: lambda a: a.name + a.title + str(a.shape) + ','.join(a.get_labels()),
+                  mosample: lambda a: a.name + str(a.dna.shape),
+                  type(lambda _: None): lambda _: None}
+
 ROOT = pathlib.Path(__file__).parent
 
 STREAMLIT_STATIC_PATH = pathlib.Path(st.__path__[0]) / 'static'

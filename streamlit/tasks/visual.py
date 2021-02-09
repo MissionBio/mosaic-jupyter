@@ -148,6 +148,11 @@ def visual(sample, assay, kind, plot_columns, kwargs):
                 df = std
             elif kwargs['attribute'] == 'p-value':
                 df = pval.applymap("{0:.2E}".format)
+
+            df['Variant'] = df.index
+            df = df.reset_index(drop=True)
+            df = df[['Variant'] + list(df.columns[:-1])]
+
             st.write(kwargs['attribute'])
             st.dataframe(df, height=1080)
     elif kind == DFT.METRICS:
@@ -194,7 +199,7 @@ def visual(sample, assay, kind, plot_columns, kwargs):
                 st.pyplot(plt.gcf())
 
 
-@st.cache(max_entries=50, hash_funcs=DFT.MOHASH, show_spinner=False, allow_output_mutation=True, ttl=3600)
+@st.cache(max_entries=50, hash_funcs=DFT.MOHASH_VISUALS, show_spinner=False, allow_output_mutation=True, ttl=3600)
 def draw_plots(sample, assay, kind, kwargs):
     if kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT, DFT.STRIPPLOT]:
         plot_funcs = {
