@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
+import requests
+
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 
@@ -10,7 +12,7 @@ import interface
 import defaults as DFT
 
 from missionbio.h5.constants import PROTEIN_ASSAY
-from missionbio.mosaic.constants import READS, COLORS
+from missionbio.mosaic.constants import READS, COLORS, NGT_FILTERED
 from missionbio.mosaic.sample import Sample as mosample
 
 
@@ -128,18 +130,7 @@ def render(sample, assay):
 
 
 def visual(sample, assay, kind, plot_columns, kwargs):
-    if kind == DFT.SIGNATURES:
-        with plot_columns:
-            med, std, pval, _ = assay.feature_signature(layer=kwargs['layer'])
-            if kwargs['attribute'] == 'Median':
-                df = med
-            elif kwargs['attribute'] == 'Standard deviation':
-                df = std
-            elif kwargs['attribute'] == 'p-value':
-                df = pval.applymap("{0:.2E}".format)
-            st.write(kwargs['attribute'])
-            st.dataframe(df)
-    elif kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT, DFT.STRIPPLOT]:
+    if kind in [DFT.HEATMAP, DFT.SCATTERPLOT, DFT.FEATURE_SCATTER, DFT.VIOLINPLOT, DFT.RIDGEPLOT, DFT.STRIPPLOT]:
         with plot_columns:
             plot_funcs = {
                 DFT.HEATMAP: assay.heatmap,
@@ -200,6 +191,45 @@ def visual(sample, assay, kind, plot_columns, kwargs):
             assay.set_labels(org_lab)
             assay.set_palette(org_pal)
 
+    elif kind == DFT.VAR_ANNOTATIONS:
+        df = get_annotations(sample.dna.ids())
+        with st.beta_columns([0.2, 10, 1])[1]:
+            st.dataframe(df, height=1080 * 4)
+    elif kind == DFT.SIGNATURES:
+        with plot_columns:
+            med, std, pval, _ = assay.feature_signature(layer=kwargs['layer'])
+            if kwargs['attribute'] == 'Median':
+                df = med
+            elif kwargs['attribute'] == 'Standard deviation':
+                df = std
+            elif kwargs['attribute'] == 'p-value':
+                df = pval.applymap("{0:.2E}".format)
+            st.write(kwargs['attribute'])
+            st.dataframe(df)
+    elif kind == DFT.METRICS:
+        with plot_columns:
+            st.header('')
+            metrics(sample)
+    elif kind == DFT.COLORS:
+        colors = COLORS.copy()
+        del colors[20]
+
+        for i in range(len(plot_columns)):
+            plot_columns[i].header('')
+
+        for i in range(len(colors)):
+            plot_columns[i % len(plot_columns)].color_picker(colors[i], colors[i], key=f'constant-colors-{colors[i]}-{i}')
+    elif kind == DFT.DOWNLOAD:
+        with plot_columns:
+            if kwargs['download']:
+                if kwargs['item'] == DFT.ANNOTATION:
+                    data = np.array([sample.dna.barcodes(), sample.dna.get_labels(), sample.protein.get_labels()]).T
+                    df = pd.DataFrame(data, columns=['barcode', 'dna', 'protein'])
+                    name = f'./{sample.name}.annotation.csv'
+                    df.to_csv(name, index=None)
+                    interface.download(name)
+                    os.remove(name)
+
     elif kind == DFT.DNA_PROTEIN_PLOT:
         with plot_columns:
             samp = mosample(protein=sample.protein[:, kwargs['protein_features']], dna=sample.dna[:, kwargs['dna_features']])
@@ -210,11 +240,6 @@ def visual(sample, assay, kind, plot_columns, kwargs):
             samp = mosample(protein=sample.protein[:, kwargs['protein_features']], dna=sample.dna[:, kwargs['dna_features']])
             fig = samp.heatmap(clusterby=kwargs['clusterby'], sortby=kwargs['sortby'], drop='cnv', flatten=False)
             st.plotly_chart(fig)
-
-    elif kind == DFT.METRICS:
-        with plot_columns:
-            st.header('')
-            metrics(sample)
     elif kind == DFT.READ_DEPTH:
         with plot_columns:
             if assay.name == PROTEIN_ASSAY:
@@ -267,25 +292,35 @@ def visual(sample, assay, kind, plot_columns, kwargs):
                 samp.protein_raw.normalize_barcodes()
                 samp.assay_scatter()
                 st.pyplot(plt.gcf())
-    elif kind == DFT.COLORS:
-        colors = COLORS.copy()
-        del colors[20]
 
-        for i in range(len(plot_columns)):
-            plot_columns[i].header('')
 
-        for i in range(len(colors)):
-            plot_columns[i % len(plot_columns)].color_picker(colors[i], colors[i], key=f'constant-colors-{colors[i]}-{i}')
-    elif kind == DFT.DOWNLOAD:
-        with plot_columns:
-            if kwargs['download']:
-                if kwargs['item'] == DFT.ANNOTATION:
-                    data = np.array([sample.dna.barcodes(), sample.dna.get_labels(), sample.protein.get_labels()]).T
-                    df = pd.DataFrame(data, columns=['barcode', 'dna', 'protein'])
-                    name = f'./{sample.name}.annotation.csv'
-                    df.to_csv(name, index=None)
-                    interface.download(name)
-                    os.remove(name)
+@st.cache(show_spinner=False)
+def get_annotations(variants):
+    interface.status('Fetching DNA annotations')
+    renamed_variants = np.array([var.replace(':', '-').replace('/', '-') for var in variants], dtype='str')
+
+    url = 'https://api.missionbio.io/annotations/v1/variants?ids=' + ','.join(renamed_variants)
+    r = requests.get(url=url)
+
+    data = r.json()
+    data = [d['annotations'] for d in data]
+
+    function = [', '.join(d['function']['value']) for d in data]
+    gene = [d['gene']['value'] for d in data]
+    protein = [d['protein']['value'] for d in data]
+    coding_impact = [d['protein_coding_impact']['value'] for d in data]
+    clinvar = [', '.join(d['clinvar']['value']) for d in data]
+    dann = np.array([d['impact']['value'] for d in data])
+    dann[dann == ''] = 0
+    dann = np.round(dann.astype(float), 2)
+
+    annot_types = ['Gene', 'Function', 'Protein', 'Coding Impact', 'ClinVar', 'DANN']
+    df = pd.DataFrame([gene, function, protein, coding_impact, clinvar, dann], index=annot_types).T
+    df['Variant'] = variants
+
+    df = df[['Variant'] + annot_types]
+
+    return df
 
 
 def metrics(sample):

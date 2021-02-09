@@ -98,20 +98,24 @@ VISUAL_CATEGORY_1 = 'Plots'
 VISUAL_CATEGORY_2 = 'Tables'
 VISUAL_CATEGORY_3 = 'Multiomic plots'
 
-SIGNATURES = 'Signatures'
 HEATMAP = 'Heatmap'
 SCATTERPLOT = 'Scatterplot'
+
 FEATURE_SCATTER = 'Feature Scatter'
 VIOLINPLOT = 'Violinplot'
 RIDGEPLOT = 'Ridgeplot'
 STRIPPLOT = 'Stripplot'
+
+VAR_ANNOTATIONS = 'Annotations'
+SIGNATURES = 'Signatures'
+COLORS = 'Colors'
+METRICS = 'Metrics'
+DOWNLOAD = 'Download'
+
 DNA_PROTEIN_PLOT = 'DNA vs Protein'
 DNA_PROTEIN_HEATMAP = 'Sample Heatmap'
-DOWNLOAD = 'Download'
-METRICS = 'Metrics'
 READ_DEPTH = 'Read Depth'
 ASSAY_SCATTER = 'Assay Scatter'
-COLORS = 'Colors'
 
 LAYOUT = {
     COLORS: [0.5] + [1] * 10,
@@ -125,8 +129,9 @@ VISUALS = {VISUAL_CATEGORY_1: [[0.25, 3, 1, 1.1, 1.35, 1, 1, 1, 4.75],
                                 RIDGEPLOT,
                                 STRIPPLOT]],
 
-           VISUAL_CATEGORY_2: [[0.25, 2.75, 1, 0.75, 0.75, 1, 7.75],
+           VISUAL_CATEGORY_2: [[0.25, 2.75, 1, 1.15, 0.75, 0.75, 1, 6.75],
                                [SIGNATURES,
+                                VAR_ANNOTATIONS,
                                 COLORS,
                                 METRICS,
                                 DOWNLOAD]],
