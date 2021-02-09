@@ -121,7 +121,7 @@ LAYOUT = {
     COLORS: [0.5] + [1] * 10,
 }
 
-VISUALS = {VISUAL_CATEGORY_1: [[0.25, 3, 1, 1.1, 1.35, 1, 1, 1, 4.75],
+VISUALS = {VISUAL_CATEGORY_1: [[2, 1, 1.1, 1.45, 1, 1, 1, 5],
                                [HEATMAP,
                                 SCATTERPLOT,
                                 FEATURE_SCATTER,
@@ -129,14 +129,14 @@ VISUALS = {VISUAL_CATEGORY_1: [[0.25, 3, 1, 1.1, 1.35, 1, 1, 1, 4.75],
                                 RIDGEPLOT,
                                 STRIPPLOT]],
 
-           VISUAL_CATEGORY_2: [[0.25, 2.75, 1, 1.15, 0.75, 0.75, 1, 6.75],
+           VISUAL_CATEGORY_2: [[2, 1, 1.15, 0.75, 0.75, 1, 6.8],
                                [SIGNATURES,
                                 VAR_ANNOTATIONS,
                                 COLORS,
                                 METRICS,
                                 DOWNLOAD]],
 
-           VISUAL_CATEGORY_3: [[0.25, 2.5, 1.25, 1.35, 1, 1.5, 5.25],
+           VISUAL_CATEGORY_3: [[1.8, 1.25, 1.35, 1, 1.5, 5],
                                [DNA_PROTEIN_PLOT,
                                 DNA_PROTEIN_HEATMAP,
                                 READ_DEPTH,

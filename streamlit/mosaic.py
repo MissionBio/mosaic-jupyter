@@ -14,6 +14,8 @@ from tasks import (
 
 st.set_page_config(page_title='Mosaic', layout='wide')
 interface.init()
+interface.subheader('---')
+interface.status('Processing')
 
 sample, should_save, save_name = load.run()
 

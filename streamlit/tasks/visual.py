@@ -12,7 +12,7 @@ import interface
 import defaults as DFT
 
 from missionbio.h5.constants import PROTEIN_ASSAY
-from missionbio.mosaic.constants import READS, COLORS, NGT_FILTERED
+from missionbio.mosaic.constants import READS, COLORS
 from missionbio.mosaic.sample import Sample as mosample
 
 
@@ -30,14 +30,14 @@ def render(sample, assay):
     options = DFT.VISUALS[category][1]
     column_sizes = DFT.VISUALS[category][0]
     columns = st.beta_columns(column_sizes)
-    with columns[1]:
+    with columns[0]:
         new_category = st.selectbox("", list(DFT.VISUALS.keys()))
         if new_category != category:
-            assay.add_metadata(DFT.VISUAL_TYPE, [new_category, DFT.VISUALS[new_category][1][0]])
+            assay.add_metadata(DFT.VISUAL_TYPE, [new_category, None])
             interface.rerun()
 
     for i in range(len(options)):
-        with columns[i + 2]:
+        with columns[i + 1]:
             st.markdown(f"<p style='margin-bottom:33px'></p>", unsafe_allow_html=True)
             clicked = st.button(options[i], key=f'visual-{options[i]}')
             if clicked:
@@ -49,9 +49,9 @@ def render(sample, assay):
         args_conatiner = columns[0]
         plot_columns = columns[1:]
     else:
-        columns = st.beta_columns([0.05, 0.75, 0.1, 2])
-        args_conatiner = columns[1]
-        plot_columns = columns[3]
+        columns = st.beta_columns([0.75, 0.1, 2])
+        args_conatiner = columns[0]
+        plot_columns = columns[2]
 
     with args_conatiner:
         kwargs = {}
