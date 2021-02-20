@@ -7,3 +7,4 @@ the capabilities of the Mission Bio analysis package, [Mosaic.](https://github.c
 
 ### List of vignettes
 - [Basic usage of Mosaic](https://missionbio.github.io/mosaic-jupyter/basics/basics.html)
+- [Filtering barcodes and ids](https://missionbio.github.io/mosaic-jupyter/filtering/filtering.html)
