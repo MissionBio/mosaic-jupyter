@@ -1,4 +1,3 @@
-streamlit/h5
-streamlit/run_mosaic
 .DS_Store
+.ipynb_checkpoints
 __pycache__
