@@ -5,7 +5,7 @@
 This repository maintains a set of vignettes showcasing
 the capabilities of the Mission Bio analysis package, [Mosaic.](https://github.com/MissionBio/mosaic)
 
-NOTE: These vignettes are for Mosaic v1.8.0. For Mosaic v2 vignettes, see [Mosaic documentation](https://github.com/MissionBio/mosaic)
+NOTE: These vignettes are for Mosaic v1.8.0. For Mosaic v2 vignettes, see [Mosaic documentation](https://missionbio.github.io/mosaic/#vignettes)
 
 ### List of vignettes
 - [Basic usage of Mosaic](https://missionbio.github.io/mosaic-jupyter/basics/basics.html)
